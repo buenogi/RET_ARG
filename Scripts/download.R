@@ -4,6 +4,7 @@
 library(xml2)
 
 #-----------------------------------------------------------------------
+
 # Dados dos experimentos de trigo na Argentina.
 
 url <- "https://www.argentina.gob.ar/inase/red-de-ensayos-comparativos-de-variedades-de-trigo/campana-20232024"
@@ -20,10 +21,13 @@ urls <- urls |>
     sub(pattern = "^.*#", replacement = "") |>
     grep(pattern = "\\.xlsx$", value = TRUE)
 
+caminho <- "Dados/Dados_Brutos/2021-2022"
+
 for (i in 1:length(urls)) {
     cat("Downloading\n  ", urls[i], "\n", sep = "")
     Sys.sleep(2)
-    download.file(urls[i], destfile = basename(urls[i]))
+    pasta_dest <- file.path(caminho, basename(urls[i]))
+    download.file(urls[i], destfile = pasta_dest)
 }
 
 #-----------------------------------------------------------------------
