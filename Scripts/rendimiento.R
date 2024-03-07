@@ -7,7 +7,8 @@ library(tidyverse)
 # Importação de todas as tabelas.
 
 fs::dir_tree(".")
-fls <- dir(pattern = "ret.*\\.xlsx")
+
+fls <- list.files(path = "Dados/Dados_Brutos", pattern = "^ret.*\\.xlsx$", recursive = TRUE, full.names = TRUE)
 
 read_and_prepare <- function(path) {
     tb <- readxl::read_xlsx(path, sheet = "Rendimiento") |>
@@ -104,7 +105,7 @@ all_na <- tb |>
 
 tb <- tb[!all_na, ]
 tb |>
-    writexl::write_xlsx("inase_trigo_rendimiento.xlsx")
+    writexl::write_xlsx("Dados/Dados_Brutos/trigo_rendimiento.xlsx")
 
 #-----------------------------------------------------------------------
 # Análise de cada experimento.
