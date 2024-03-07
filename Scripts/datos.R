@@ -117,23 +117,21 @@ class(sheets[["local"]])
 
 sheets[["local"]] <- as.data.frame(sheets[["local"]])
 
-sheets[["local"]] <- left_join(sheets[["local"]], de_para, join_by("subregion_segun_mapa_2021" == "De"))
+sheets[["local"]] <- left_join(sheets[["local"]], de_para, 
+                               join_by("subregion_segun_mapa_2021" == "De"))
 View(sheets[["local"]])
-sheets[["local"]][["SUB_ABR"]] <-   ("VSU",
-                                    "CHS",
-                                    "VSU",
-                                    "VSU",
-                                    "VSU")
-sheets[["local"]][["SUB_NOM"]] <- c("Valles subandinos",
-                                    "Chaco húmedo sur",
-                                    "Valles subandinos",
-                                    "Valles subandinos",
-                                    "Valles subandinos",
-                                    "Valles subandinos",
-                                    "Pampa mesopotámica")
-sheets[["local"]]
-View(sheets[["local"]]$subregion_segun_mapa_2021)
-
+# sheets[["local"]][["SUB_ABR"]] <-   ("VSU",
+#                                     "CHS",
+#                                     "VSU",
+#                                     "VSU",
+#                                     "VSU")
+# sheets[["local"]][["SUB_NOM"]] <- c("Valles subandinos",
+#                                     "Chaco húmedo sur",
+#                                     "Valles subandinos",
+#                                     "Valles subandinos",
+#                                     "Valles subandinos",
+#                                     "Valles subandinos",
+#                                     "Pampa mesopotámica")
 
 # Detalhes do experimento.
 sheets[["diseño"]] <-
@@ -147,6 +145,8 @@ sheets[["diseño"]] <-
     janitor::clean_names()
 sheets[["diseño"]]
 
+View(sheets[["diseño"]])
+
 # Solo.
 sheets[["suelo"]] <-
     tb |>
@@ -156,7 +156,7 @@ sheets[["suelo"]] <-
                   .fns = parse_guess)) |>
     select(-categoria) |>
     janitor::clean_names()
-sheets[["suelo"]]
+View(sheets[["suelo"]])
 
 # Cultura anterior.
 sheets[["antecesor"]] <-
@@ -167,7 +167,8 @@ sheets[["antecesor"]] <-
                   .fns = str_to_title)) |>
     select(-categoria) |>
     janitor::clean_names()
-sheets[["antecesor"]]
+View(sheets[["antecesor"]])
+
 
 # Semeadura.
 sheets[["siembra"]] <-
@@ -178,7 +179,7 @@ sheets[["siembra"]] <-
     select(-categoria) |>
     rename_with(.fn = ~str_remove(.x, ":.*")) |>
     janitor::clean_names()
-sheets[["siembra"]]
+View(sheets[["siembra"]])
 
 # Aplicações de insumos de defensivos.
 sheets[["manejo"]] <-
@@ -186,11 +187,11 @@ tb |>
     filter(str_detect(categoria, "MANEJO")) |>
     pivot_wider(names_from = nombre, values_from = valor) |>
     mutate(across(.cols = -c(filename, categoria),
-                  .fns = parse_guess)) |>
+                  .fns = parse_guess))|>
     select(-categoria) |>
     rename_with(.fn = ~str_remove(.x, "\\(.*")) |>
     janitor::clean_names()
-sheets[["manejo"]]
+View(sheets[["manejo"]])
 
 # Precipitação.
 sheets[["lluvia"]] <-
@@ -201,7 +202,7 @@ sheets[["lluvia"]] <-
     mutate(across(.cols = `Enero:`:`Diciembre:`, .fns = parse_guess)) |>
     select(1:`Diciembre:`) |>
     janitor::clean_names()
-sheets[["lluvia"]]
+View(sheets[["lluvia"]])
 
 # Temperatura.
 sheets[["temperatura"]] <-
@@ -212,8 +213,8 @@ sheets[["temperatura"]] <-
     mutate(across(.cols = `Enero:`:`Diciembre:`, .fns = parse_guess)) |>
     select(1:`Diciembre:`) |>
     janitor::clean_names()
-sheets[["temperatura"]]
+View(sheets[["temperatura"]])
 
-writexl::write_xlsx(sheets, "inase_trigo_metadatos.xlsx")
+writexl::write_xlsx(sheets, "Dados/Dados_Brutos/trigo_metadatos.xlsx")
 
 #-----------------------------------------------------------------------
