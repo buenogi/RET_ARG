@@ -104,4 +104,88 @@ nomes <- c("nome_doc",
 colnames(dados) <- nomes
 dados$semeadura <- NULL
 
+# Padronização dos valores das tuplas
+
+for(i in 1:nrow(dados)){
+  if(dados$fungicida[i] == "SIN FUNG."){
+    dados$fungicida[i] <- "SIN FUNGICIDA"
+  }
+}
+
+dados$cultivar <- gsub("\\b(\\w{1,3}|\\d)\\s", "\\1", dados$cultivar, perl = TRUE)
+#-----------
+de_para <- data.frame("De" = c("B450", "BAG450",
+                               "B550", "BAG550",
+                               "B620", "BAG620",
+                               "B680","BAG680",
+                               "B750", "BAG750",
+                               "B820","BAG820",
+                               "BBRAVIOCL2",
+                               "BCOLIH",
+                               "BCUME" ,
+                               "BDEST",
+                               "BG620" ,
+                               "BGTTE 620",
+                               "BG680" ,
+                               "BG750",
+                               "BIOINTA 1006\r\n1006",
+                               "BIOINTA 1008\r\n1008",
+                               "BMET" ,
+                               "BMUT",
+                               "BPEREGR",
+                               "BUCK AMANCAY\r\nAMANCAY",
+                               "BUCK BRAVIO",
+                               "BUCK FULGOOR" , "BUCK FULGOR\r\nFULGOR",
+                               "DMCEIBO",
+                               "DMTBIO AUDAZ",
+                               "GINGKO", 
+                               "GUAYAVO","GUYABO", 
+                               "ISHORNERO\r\nHORNERO",
+                               "K.100ANOS", "K.CIEN ANOS", "KLEIN 100ANOS", "KLEIN CIEN AA'OS" ,"KLEIN CIEN ANOS",
+                               "KLFAVORI" ,
+                               "KLLIEBRE",
+                               "KLNUTR",
+                               "KLNUTRIA",
+                               "KLPROME",
+                               "KLTITANCL",
+                               "LGWA-11-01" ,"LGWA11" ,"LGWA11 (PAM)", "LGWA11 PAMPERO", "LGWA11-0169" ,"LGWA11-0169 (PAMPERO)",
+                               "MSINTA B. 817" , "MSINTA B817", "MSINTA BON817",
+                               "MSINTA MDABONAERENSE 122", "MSMB122","MSINTA MDABONAERENSE 221",
+                               "TBIOAUDAZ",
+                               "TUCELITE 17" ,
+                               "TUCELITE 43"),
+           
+           "Para" = c("BAGUETTE 450","BAGUETTE 450",
+                      "BAGUETTE 550","BAGUETTE 550",
+                      "BAGUETTE 620","BAGUETTE 620",
+                      "BAGUETTE 680","BAGUETTE 680",
+                      "BAGUETTE 750","BAGUETTE 750",
+                      "BAGUETTE 820","BAGUETTE 820",
+                      "BBRAVIO CL2",
+                      "BCOLIHUE" ,
+                      "BCUMELEN",
+                      "BDESTELLO",
+                      "BAGUETTE 620","BAGUETTE 620",
+                      "BAGUETTE 680",
+                      "BAGUETTE 750",
+                      "BIOINTA 1006",
+                      "BIOINTA 1008",
+                      "BMETEORO", 
+                      "BMUTISIA", "BPEREGRINO","BUCK AMANCAY", "BUCK BRAVIO CL2", "BUCK FULGOR" , "BUCK FULGOR","CEIBO","DMTBIO\r\nAUDAZ", "GINKO", "GUAYABO","GUAYABO","ISHORNERO", "K. CIEN ANOS" ,"K. CIEN ANOS" ,"K. CIEN ANOS", "K. CIEN ANOS" ,"K. CIEN ANOS" , "KLFAVORITO", "KLIEBRE",  "KNUTRIA"  , "KNUTRIA" , "KLPROMETEO","KLTITAN CL", 
+                      "LGWA11 PAMPERO","LGWA11 PAMPERO","LGWA11 PAMPERO","LGWA11 PAMPERO","LGWA11 PAMPERO","LGWA11 PAMPERO", "MSINTA 817" ,"MSINTA 817" ,"MSINTA 817" ,"MSINTA BONAERENSE 122","MSINTA BONAERENSE 122","MSINTA BONAERENSE 221" ,"TBIO AUDAZ" , "TUCELITTE 17", "TUCELITTE 43"))
+
+# -----------------------
+dados <- left_join(dados, de_para, by = c("cultivar" = "De"))
+
+for(i in 1:nrow(dados)){
+  if( !is.na(dados$Para[i])){
+    dados$cultivar[i] <- dados$Para[i]
+  }
+}
+
+dados$Para <- NULL
+dados$subregiao <- NULL
+
+levels(as.factor(dados$desenho_experimental))
+
 write.csv(dados, file = "Dados/Dados_processados/RET_ARG.csv")
