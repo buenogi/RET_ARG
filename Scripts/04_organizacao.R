@@ -34,7 +34,7 @@ metadados <- metadados%>%
 dados <- left_join(rendimento, metadados, by = "filename")
 
 
-# Organização nomenclarura -----------------------------------------------------
+# Organização nomenclatura -----------------------------------------------------
 nomes <- c("nome_doc",
            "epoca",
            "ciclo",                                 
@@ -54,8 +54,8 @@ nomes <- c("nome_doc",
            "desenho_experimental",        
            "num_total_cultivares_intervinientes",
            "num_total_de_parcelas_por_ensaio",   
-           "largo_promedio_m",                      
-           "ancho_m",                               
+           "comprimento_medio_m",                      
+           "largura_m",                               
            "distancia_entre_fileras_cm",            
            "numero_de_fileras",                     
            "solo",                                 
@@ -102,3 +102,6 @@ nomes <- c("nome_doc",
            "temp_novembro",                          
            "temp_dezembro") 
 colnames(dados) <- nomes
+dados$semeadura <- NULL
+
+write.csv(dados, file = "Dados/Dados_processados/RET_ARG.csv")
