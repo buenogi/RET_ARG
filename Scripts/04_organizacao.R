@@ -104,7 +104,7 @@ nomes <- c("nome_doc",
 colnames(dados) <- nomes
 dados$semeadura <- NULL
 
-# Padronização dos valores das tuplas
+# Padronização dos valores das tuplas de utilização de fungicida ---------------
 
 for(i in 1:nrow(dados)){
   if(dados$fungicida[i] == "SIN FUNG."){
@@ -112,8 +112,8 @@ for(i in 1:nrow(dados)){
   }
 }
 
+# Dados de-para nomes de cultivares --------------------------------------------
 dados$cultivar <- gsub("\\b(\\w{1,3}|\\d)\\s", "\\1", dados$cultivar, perl = TRUE)
-#-----------
 de_para <- data.frame("De" = c("B450", "BAG450",
                                "B550", "BAG550",
                                "B620", "BAG620",
@@ -173,8 +173,6 @@ de_para <- data.frame("De" = c("B450", "BAG450",
                       "BMETEORO", 
                       "BMUTISIA", "BPEREGRINO","BUCK AMANCAY", "BUCK BRAVIO CL2", "BUCK FULGOR" , "BUCK FULGOR","CEIBO","DMTBIO\r\nAUDAZ", "GINKO", "GUAYABO","GUAYABO","ISHORNERO", "K. CIEN ANOS" ,"K. CIEN ANOS" ,"K. CIEN ANOS", "K. CIEN ANOS" ,"K. CIEN ANOS" , "KLFAVORITO", "KLIEBRE",  "KNUTRIA"  , "KNUTRIA" , "KLPROMETEO","KLTITAN CL", 
                       "LGWA11 PAMPERO","LGWA11 PAMPERO","LGWA11 PAMPERO","LGWA11 PAMPERO","LGWA11 PAMPERO","LGWA11 PAMPERO", "MSINTA 817" ,"MSINTA 817" ,"MSINTA 817" ,"MSINTA BONAERENSE 122","MSINTA BONAERENSE 122","MSINTA BONAERENSE 221" ,"TBIO AUDAZ" , "TUCELITTE 17", "TUCELITTE 43"))
-
-# -----------------------
 dados <- left_join(dados, de_para, by = c("cultivar" = "De"))
 
 for(i in 1:nrow(dados)){
@@ -182,10 +180,84 @@ for(i in 1:nrow(dados)){
     dados$cultivar[i] <- dados$Para[i]
   }
 }
+# Padronização da nomenclatura de desenho experimental -------------------------
 
+dados$desenho_experimental <- ifelse(dados$desenho_experimental != "Latice", "DBCA", dados$desenho_experimental)
 dados$Para <- NULL
 dados$subregiao <- NULL
+# Padronização da nomenclatura do solo
+dados$solo <- str_to_title(dados$solo) 
+levels(as.factor(dados$solo))
 
-levels(as.factor(dados$desenho_experimental))
+for (i in 1:nrow(dados)) {
+  if (!is.na(dados$solo[i])) {
+    if (dados$solo[i] == "Argiudol Tipico" | 
+        dados$solo[i] == "Clase 1") {
+      dados$solo[i] <- "Argiudol Típico"
+    } else if (dados$solo[i] == "Haplustol Tipico") {
+      dados$solo[i] <- "Haplustol Típico"
+    }
+  }
+}
+
+# Padronização do tipo de solo ----------------
+dados$tipo <- str_to_title(dados$tipo)
+dados$tipo <- str_replace(dados$tipo,"Tipico", "Típico")
+dados$tipo <- str_replace(dados$tipo,"Pintos.", "Pintos")
+
+
+for (i in 1:nrow(dados)) {
+  if (!is.na(dados$tipo[i])) {
+    if (dados$tipo[i] == "Argiudol  Típico (50% Suelo Principal. Limitante: Somero)" | 
+        dados$tipo[i] == "Argiudol Típico, Serie Maciel") {
+      dados$tipo[i] <- "Argiudol Típico"
+}}}
+
+# Padronização da textura -----------------
+dados$textura <- str_to_title(dados$textura)
+dados$textura <-str_remove_all(dados$textura, "-")
+
+for (i in 1:nrow(dados)) {
+  if (!is.na(dados$textura[i])) {
+    if (dados$textura[i] == "Fraco" | 
+        dados$textura[i] == "Franca") {
+      dados$textura[i] <- "Franco"
+    }}}
+
+for (i in 1:nrow(dados)) {
+  if (!is.na(dados$textura[i])) {
+    if (dados$textura[i] == "ArenosoFranco" | 
+        dados$textura[i] == "Franco Arenosa") {
+      dados$textura[i] <- "Franco Arenoso"
+    }}}
+
+for (i in 1:nrow(dados)) {
+  if (!is.na(dados$textura[i])) {
+    if (dados$textura[i] == "Fraco Limoso" | 
+        dados$textura[i] == "FrancoLimosa") {
+      dados$textura[i] <- "Franco Limoso"
+    }}}
+
+for (i in 1:nrow(dados)) {
+  if (!is.na(dados$nitrogeno_ppm[i])) {
+    if (dados$nitrogeno_ppm[i] == "0-20: 5,8") {
+      dados$nitrogeno_ppm[i] <- "5,8"}
+    else if(dados$nitrogeno_ppm[i] == "0,11; 39"){
+      dados$nitrogeno_ppm[i] <- "39"}
+    else if(dados$nitrogeno_ppm[i] == "11,9 (No3)"){
+      dados$nitrogeno_ppm[i] <-  "11,9"
+    }}}
+
+# Padronização do cultivo antecessor -------------
+
+dados$cultivo_antecesor <- str_replace(dados$cultivo_antecesor,"Maiz", "Maíz")
+dados$cultivo_antecesor <- str_replace(dados$cultivo_antecesor,"Soja 1°", "Soja")
+
+# FINALIZAR
+#Verificações ---------------------
+#levels(as.factor(dados$densidad_sementes_m2))
+#levels(as.factor(dados$densidad_sementes_kg_ha))
+#levels(as.factor(dados$sistema))
+# Extração do ano
 
 write.csv(dados, file = "Dados/Dados_processados/RET_ARG.csv")
