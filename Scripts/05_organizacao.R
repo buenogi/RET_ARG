@@ -16,7 +16,7 @@ temperatura <- readxl::read_xlsx("Dados/Dados_Brutos/trigo_metadatos.xlsx", shee
 rendimento <- readxl::read_xlsx("Dados/Dados_Brutos/trigo_rendimiento.xlsx", n_max = 3078)
 datas <- readxl::read_xlsx("Dados/Dados_Brutos/trigo_datas.xlsx", n_max =  8139)
 grupos <- read.csv("Dados/Dados_Brutos/grupos_qualidade.csv")
-de_para <- read_csv("Dados/Dados_Brutos/de_para.csv")
+de_para <- read_csv("Dados/Dados_Brutos/de_para.csv", show_col_types = FALSE)
 de_para <- unique(de_para)
 de_para$Para <- trimws(de_para$Para)
 
@@ -36,9 +36,18 @@ for(i in 1:nrow(rendimento)){
 rendimento$cultivar <- gsub("SY109", "SY109", rendimento$cultivar)
 rendimento$cultivar <- gsub("SY200 ", "SY200", rendimento$cultivar)
 rendimento$cultivar <- gsub("DM.*", "", rendimento$cultivar)
+rendimento$cultivar <- gsub("\\b\\w+\\K\\r\\nCL", "", rendimento$cultivar, perl = TRUE)
+
+
+remove_last_repeated_word <- function(text) {
+  gsub("\\b(\\w+)\\s+\\1\\b", "\\1", text, perl = TRUE)
+}
+
+rendimento$cultivar <- sapply(rendimento$cultivar, remove_last_repeated_word)
+
 unique(rendimento$cultivar)
 
-#Organização nomenclatura dos cultivares por grupo --------------------
+# Organização nomenclatura dos cultivares por grupo --------------------
 
 grupos$ano_class_qualidade <- NULL
 grupos$titular <- NULL
@@ -49,7 +58,7 @@ grupos$variedade <- gsub("MSINTA", "MS INTA", grupos$variedade)
 grupos$variedade <- str_to_upper(grupos$variedade)
 grupos$variedade <- gsub("SY109", "SY109", grupos$variedade)
 grupos$variedade <- gsub("SY200 ", "SY200", grupos$variedade)
-grupos$cultivar <- gsub("DM.*", "", grupos$cultivar)
+grupos$cultivar <- gsub("DM.*", "", grupos$variedade)
 grupos <- unique(grupos)
 # Identificação dos cultivares que precisam de correção:
 # dados <- left_join(rendimento, grupos, by = c("cultivar" = "variedade"))
@@ -83,8 +92,8 @@ unique(dados$cultivar)
 
 sem_empresa <- dados%>%
   filter(is.na(empresa))%>%
-  group_by(cultivar)%>%
-  count()
+  # group_by(cultivar)%>%
+  # count()
 
 
 
@@ -102,27 +111,34 @@ sem_empresa <- dados%>%
 dados <- left_join(dados, grupos, by = c("cultivar" = "variedade"))
 
 sem_empresa <- dados%>%
-  filter(is.na(empresa))
+  filter(is.na(empresa))%>%
+  group_by(filename)%>%
+  count()
+
+sem_empresa2 <- dados%>%
+  filter(is.na(empresa))%>%
+  group_by(cultivar)%>%
+  count()
 
 unique(sem_empresa$cultivar)
+# Remoção de cultivares sem identificação e de extração inadequada:
+for(i in nrow(dados):1) {
+  if(is.na(dados$cultivar[i]) || dados$cultivar[i] == "CV%" ||
+     dados$cultivar[i] == "PROMEDIO" || dados$cultivar[i] == "MAXIMO" ||
+     dados$cultivar[i] == "MINIMO" || dados$cultivar[i] == "") {
+    dados <- dados[-i, ]
+  }
+}
 
-#rendimento$cultivar <- gsub("ACA([0-9]+)", "ACA \\1", rendimento$cultivar)
+dados$Para <- NULL
+dados$cultivar.y <- NULL
 
-# -------------------------------------------------------------------------
+# Correção na planilha de local --------------------------------------------------
 local <- local %>%
   mutate(filename = str_to_lower(filename)) %>%
   mutate(filename = str_replace(filename, "brutos", "Brutos"))%>%
   mutate(filename = str_replace(filename, "dados", "Dados"))%>%
   mutate(filename = str_replace(filename, "/dados", "/Dados"))
-
-
-# for (i in nrow(datas):1) {
-#   if (is.na(datas$fecha_de_siembra[i])) {
-#     datas <- datas[-i, ]
-#   }
-# }
-# grupos|>
-#   writexl::write_xlsx("Dados/Dados_Brutos/trigo_grupos.xlsx")
 
 # União dos dados e metadados -------------------------------------------------
 metadados <- left_join(local, desenho)
@@ -135,24 +151,128 @@ metadados <- left_join(metadados,temperatura, by = "filename")
 metadados <- metadados%>%
   mutate(filename = str_remove(filename, ".xlsx"))
 dados <- left_join(rendimento, metadados, by = "filename")
+
+# Correção da nomenclatura dos cultivares em Datas ------------------
+
+datas$cultivar <- trimws(datas$cultivar)|>
+  str_to_upper()
+
+datas <- left_join(datas, de_para, by = c("cultivar" = "De"))
+
+for(i in 1:nrow(datas)){
+  if( !is.na(datas$Para[i])){
+    datas$cultivar[i] <- datas$Para[i]
+  }
+}
+
+datas$cultivar <- gsub("SY109", "SY109", datas$cultivar)
+datas$cultivar <- gsub("SY200 ", "SY200", datas$cultivar)
+datas$cultivar <- gsub("DM.*", "", datas$cultivar)
+datas$cultivar <- gsub("\\b\\w+\\K\\r\\nCL", "", datas$cultivar, perl = TRUE)
+
+
+remove_last_repeated_word <- function(text) {
+  gsub("\\b(\\w+)\\s+\\1\\b", "\\1", text, perl = TRUE)
+}
+
+datas$cultivar <- sapply(datas$cultivar, remove_last_repeated_word)
+
+unique(datas$cultivar)
+datas$Para <- NULL
 dados <- right_join(dados, datas, by = c("filename", "cultivar", "epoca", "ciclo", "fungicida"))
-# Organização da nomenclatura dos cultivares para identificação da empresa
-# grupos$variedade <- gsub("MS INTA119", "MS INTA 119", grupos$variedade)
-# grupos$variedade <- gsub("ACA 360 ", "ACA 360", grupos$variedade)
-# dados$cultivar <- gsub("362", "ACA 362", dados$cultivar)
-# dados$cultivar <- gsub("ACA 360 ", "ACA 360", dados$cultivar)
-#dados$cultivar <- gsub("K.*", "KLEIN", dados$cultivar)
-# dados$cultivar <- gsub("K *", "KLEIN", dados$cultivar)
-# dados$cultivar <- gsub("KL *", "KLEIN", dados$cultivar)
-# dados$cultivar <- gsub("KL.*", "KLEIN ", dados$cultivar)
-# # dados$cultivar <- gsub("GINGKLEIN ", "GINGK", dados$cultivar)
-# # dados$cultivar <- gsub("BUCKLEIN ", "BUCK", dados$cultivar)
-# dados$cultivar <- gsub("LG ARLASKLEIN ", "LG ARLASK", dados$cultivar)
-# dados$cultivar <- gsub("LAPACHO ", "LAPACHO", dados$cultivar)
-#dados$cultivar <- gsub("B.", "BUCK", dados$cultivar)
+
+# Padronização dos valores das tuplas de utilização de fungicida ---------------
+
+for(i in 1:nrow(dados)){
+  if(dados$fungicida[i] == "SIN FUNG."){
+    dados$fungicida[i] <- "SIN FUNGICIDA"
+  }
+}
+
+# Padronização da nomenclatura de desenho experimental -------------------------
+
+dados$diseno_estadistico_del_ensayos <- ifelse(dados$diseno_estadistico_del_ensayos != "Latice", "DBCA", dados$diseno_estadistico_del_ensayos)
+dados$Para <- NULL
+dados$subregiao <- NULL
+# Padronização da nomenclatura do solo ----------------------
+dados$suelo <- str_to_title(dados$suelo) 
+levels(as.factor(dados$suelo))
+
+for (i in 1:nrow(dados)) {
+  if (!is.na(dados$suelo[i])) {
+    if (dados$suelo[i] == "Argiudol Tipico" | 
+        dados$suelo[i] == "Clase 1") {
+      dados$suelo[i] <- "Argiudol Típico"
+    } else if (dados$suelo[i] == "Haplustol Tipico") {
+      dados$suelo[i] <- "Haplustol Típico"
+    }
+  }
+}
+
+# Padronização do tipo de solo ----------------
+dados$tipo <- str_to_title(dados$tipo)
+dados$tipo <- str_replace(dados$tipo,"Tipico", "Típico")
+dados$tipo <- str_replace(dados$tipo,"Pintos.", "Pintos")
 
 
-# Organização nomenclatura -----------------------------------------------------
+for (i in 1:nrow(dados)) {
+  if (!is.na(dados$tipo[i])) {
+    if (dados$tipo[i] == "Argiudol  Típico (50% Suelo Principal. Limitante: Somero)" | 
+        dados$tipo[i] == "Argiudol Típico, Serie Maciel") {
+      dados$tipo[i] <- "Argiudol Típico"
+}}}
+
+# Padronização da textura -----------------
+
+dados$textura <- str_to_title(dados$textura)
+dados$textura <-str_remove_all(dados$textura, "-")
+
+for (i in 1:nrow(dados)) {
+  if (!is.na(dados$textura[i])) {
+    if (dados$textura[i] == "Fraco" | 
+        dados$textura[i] == "Franca") {
+      dados$textura[i] <- "Franco"
+    }}}
+
+for (i in 1:nrow(dados)) {
+  if (!is.na(dados$textura[i])) {
+    if (dados$textura[i] == "ArenosoFranco" | 
+        dados$textura[i] == "Franco Arenosa") {
+      dados$textura[i] <- "Franco Arenoso"
+    }}}
+
+for (i in 1:nrow(dados)) {
+  if (!is.na(dados$textura[i])) {
+    if (dados$textura[i] == "Fraco Limoso" ||
+        dados$textura[i] == "FrancoLimosa"|| 
+        dados$textura[i] == "Franco  Limosp" ) {
+      dados$textura[i] <- "Franco Limoso"
+    }}}
+
+for (i in 1:nrow(dados)) {
+  if (!is.na(dados$nitrogeno_ppm[i])) {
+    if (dados$nitrogeno_ppm[i] == "0-20: 5,8") {
+      dados$nitrogeno_ppm[i] <- "5,8"}
+    else if(dados$nitrogeno_ppm[i] == "0,11; 39"){
+      dados$nitrogeno_ppm[i] <- "39"}
+    else if(dados$nitrogeno_ppm[i] == "11,9 (No3)"){
+      dados$nitrogeno_ppm[i] <-  "11,9"
+    }}}
+
+# Padronização do cultivo antecessor -------------
+
+dados$cultivo_antecesor <- str_replace(dados$cultivo_antecesor,"Maiz", "Maíz")
+dados$cultivo_antecesor <- str_replace(dados$cultivo_antecesor,"Soja 1°", "Soja")
+
+# FINALIZAR
+#Verificações ---------------------
+# Extração do ano---------------------------------------------------------------
+dados$ano <- NA
+for(i in 1:nrow(dados)){
+  dados$ano[i] <- as.numeric(gsub("^.*\\/(\\d{4})-\\d{4}\\/.*$", "\\1", dados$filename[i]))
+
+}
+# # Organização nomenclatura -----------------------------------------------------
 # nomes <- c("nome_doc",
 #            "epoca",
 #            "ciclo",                                 
@@ -222,162 +342,5 @@ dados <- right_join(dados, datas, by = c("filename", "cultivar", "epoca", "ciclo
 # colnames(dados) <- nomes
 # dados$semeadura <- NULL
 
-# Padronização dos valores das tuplas de utilização de fungicida ---------------
-
-for(i in 1:nrow(dados)){
-  if(dados$fungicida[i] == "SIN FUNG."){
-    dados$fungicida[i] <- "SIN FUNGICIDA"
-  }
-}
-
-# Dados de-para nomes de cultivares --------------------------------------------
-dados$cultivar <- gsub("\\b(\\w{1,3}|\\d)\\s", "\\1", dados$cultivar, perl = TRUE)
-
-de_para <- data.frame("De" = c("B450", "BAG450",
-                               "B550", "BAG550",
-                               "B620", "BAG620",
-                               "B680","BAG680",
-                               "B750", "BAG750",
-                               "B820","BAG820",
-                               "BBRAVIOCL2",
-                               "BCOLIH",
-                               "BCUME" ,
-                               "BDEST",
-                               "BG620" ,
-                               "BGTTE 620",
-                               "BG680" ,
-                               "BG750",
-                               "BIOINTA 1006\r\n1006",
-                               "BIOINTA 1008\r\n1008",
-                               "BMET" ,
-                               "BMUT",
-                               "BPEREGR",
-                               "BUCK AMANCAY\r\nAMANCAY",
-                               "BUCK BRAVIO",
-                               "BUCK FULGOOR" , "BUCK FULGOR\r\nFULGOR",
-                               "DMCEIBO",
-                               "DMTBIO AUDAZ",
-                               "GINGKO", 
-                               "GUAYAVO","GUYABO", 
-                               "ISHORNERO\r\nHORNERO",
-                               "K.100ANOS", "K.CIEN ANOS", "KLEIN 100ANOS", "KLEIN CIEN AA'OS" ,"KLEIN CIEN ANOS",
-                               "KLFAVORI" ,
-                               "KLLIEBRE",
-                               "KLNUTR",
-                               "KLNUTRIA",
-                               "KLPROME",
-                               "KLTITANCL",
-                               "LGWA-11-01" ,"LGWA11" ,"LGWA11 (PAM)", "LGWA11 PAMPERO", "LGWA11-0169" ,"LGWA11-0169 (PAMPERO)",
-                               "MSINTA B. 817" , "MSINTA B817", "MSINTA BON817",
-                               "MSINTA MDABONAERENSE 122", "MSMB122","MSINTA MDABONAERENSE 221",
-                               "TBIOAUDAZ",
-                               "TUCELITE 17" ,
-                               "TUCELITE 43"),
-           
-           "Para" = c("BAGUETTE 450","BAGUETTE 450",
-                      "BAGUETTE 550","BAGUETTE 550",
-                      "BAGUETTE 620","BAGUETTE 620",
-                      "BAGUETTE 680","BAGUETTE 680",
-                      "BAGUETTE 750","BAGUETTE 750",
-                      "BAGUETTE 820","BAGUETTE 820",
-                      "BBRAVIO CL2",
-                      "BCOLIHUE" ,
-                      "BCUMELEN",
-                      "BDESTELLO",
-                      "BAGUETTE 620","BAGUETTE 620",
-                      "BAGUETTE 680",
-                      "BAGUETTE 750",
-                      "BIOINTA 1006",
-                      "BIOINTA 1008",
-                      "BMETEORO", 
-                      "BMUTISIA", "BPEREGRINO","BUCK AMANCAY", "BUCK BRAVIO CL2", "BUCK FULGOR" , "BUCK FULGOR","CEIBO","DMTBIO\r\nAUDAZ", "GINKO", "GUAYABO","GUAYABO","ISHORNERO", "K. CIEN ANOS" ,"K. CIEN ANOS" ,"K. CIEN ANOS", "K. CIEN ANOS" ,"K. CIEN ANOS" , "KLFAVORITO", "KLIEBRE",  "KNUTRIA"  , "KNUTRIA" , "KLPROMETEO","KLTITAN CL", 
-                      "LGWA11 PAMPERO","LGWA11 PAMPERO","LGWA11 PAMPERO","LGWA11 PAMPERO","LGWA11 PAMPERO","LGWA11 PAMPERO", "MSINTA 817" ,"MSINTA 817" ,"MSINTA 817" ,"MSINTA BONAERENSE 122","MSINTA BONAERENSE 122","MSINTA BONAERENSE 221" ,"TBIO AUDAZ" , "TUCELITTE 17", "TUCELITTE 43"))
-dados <- left_join(dados, de_para, by = c("cultivar" = "De"))
-
-for(i in 1:nrow(dados)){
-  if( !is.na(dados$Para[i])){
-    dados$cultivar[i] <- dados$Para[i]
-  }
-}
-
-# Padronização da nomenclatura de desenho experimental -------------------------
-
-dados$desenho_experimental <- ifelse(dados$desenho_experimental != "Latice", "DBCA", dados$desenho_experimental)
-dados$Para <- NULL
-dados$subregiao <- NULL
-# Padronização da nomenclatura do solo
-dados$solo <- str_to_title(dados$solo) 
-levels(as.factor(dados$solo))
-
-for (i in 1:nrow(dados)) {
-  if (!is.na(dados$solo[i])) {
-    if (dados$solo[i] == "Argiudol Tipico" | 
-        dados$solo[i] == "Clase 1") {
-      dados$solo[i] <- "Argiudol Típico"
-    } else if (dados$solo[i] == "Haplustol Tipico") {
-      dados$solo[i] <- "Haplustol Típico"
-    }
-  }
-}
-
-# Padronização do tipo de solo ----------------
-dados$tipo <- str_to_title(dados$tipo)
-dados$tipo <- str_replace(dados$tipo,"Tipico", "Típico")
-dados$tipo <- str_replace(dados$tipo,"Pintos.", "Pintos")
-
-
-for (i in 1:nrow(dados)) {
-  if (!is.na(dados$tipo[i])) {
-    if (dados$tipo[i] == "Argiudol  Típico (50% Suelo Principal. Limitante: Somero)" | 
-        dados$tipo[i] == "Argiudol Típico, Serie Maciel") {
-      dados$tipo[i] <- "Argiudol Típico"
-}}}
-
-# Padronização da textura -----------------
-dados$textura <- str_to_title(dados$textura)
-dados$textura <-str_remove_all(dados$textura, "-")
-
-for (i in 1:nrow(dados)) {
-  if (!is.na(dados$textura[i])) {
-    if (dados$textura[i] == "Fraco" | 
-        dados$textura[i] == "Franca") {
-      dados$textura[i] <- "Franco"
-    }}}
-
-for (i in 1:nrow(dados)) {
-  if (!is.na(dados$textura[i])) {
-    if (dados$textura[i] == "ArenosoFranco" | 
-        dados$textura[i] == "Franco Arenosa") {
-      dados$textura[i] <- "Franco Arenoso"
-    }}}
-
-for (i in 1:nrow(dados)) {
-  if (!is.na(dados$textura[i])) {
-    if (dados$textura[i] == "Fraco Limoso" | 
-        dados$textura[i] == "FrancoLimosa") {
-      dados$textura[i] <- "Franco Limoso"
-    }}}
-
-for (i in 1:nrow(dados)) {
-  if (!is.na(dados$nitrogeno_ppm[i])) {
-    if (dados$nitrogeno_ppm[i] == "0-20: 5,8") {
-      dados$nitrogeno_ppm[i] <- "5,8"}
-    else if(dados$nitrogeno_ppm[i] == "0,11; 39"){
-      dados$nitrogeno_ppm[i] <- "39"}
-    else if(dados$nitrogeno_ppm[i] == "11,9 (No3)"){
-      dados$nitrogeno_ppm[i] <-  "11,9"
-    }}}
-
-# Padronização do cultivo antecessor -------------
-
-dados$cultivo_antecesor <- str_replace(dados$cultivo_antecesor,"Maiz", "Maíz")
-dados$cultivo_antecesor <- str_replace(dados$cultivo_antecesor,"Soja 1°", "Soja")
-
-# FINALIZAR
-#Verificações ---------------------
-#levels(as.factor(dados$densidad_sementes_m2))
-#levels(as.factor(dados$densidad_sementes_kg_ha))
-#levels(as.factor(dados$sistema))
-# Extração do ano
 
 write.csv(dados, file = "Dados/Dados_processados/RET_ARG.csv")
