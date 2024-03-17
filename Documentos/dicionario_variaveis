@@ -8,6 +8,15 @@ rep_ii: 2ª replicata técnica
 rep_iii: 3ª replicata técnica
 rep_iv: 4ª replicata técnica
 rep_v: 5ª replicata técnica
+empresa: empresa responsável pela comercialização do cultivar                  
+inicio_ret: ano em que o cultivar foi incorporado na Rede de Experimentos de Trigo
+grupo__qualidade: grupo de qualidade no qual o cultivar se enquadra
+data_de_plantio: data em que o experimento foi iniciado
+data_de_espigacao: data de espigação
+data_de_maturacao: data de maturação
+dias_do_plantio_a_espigacao: período de tempo do plantio à espigação, em dias
+dias_da_espigacao_a_maturacao: período de tempo da espigação à maturação, em dias
+dias_do_plantio_a_maturacao: periodo de tempo do plantio à maturação, em dias
 subregiao: subregião de realização do ensaio
 localidade: localidade de realização do ensaio
 coordenador_a: responsável pela realização do ensaio
@@ -15,10 +24,10 @@ colaborador_a: equipe envolvida na realização do ensaio
 subregiao_abrev: abreviatura da subregião de realização do ensaio
 subregiao_nome: nome completo da subregião de realização do ensaio
 desenho_experimental: desenho experimental adotado
-num_total_cultivares_intervinientes: numero total de cultivares testados
+num_total_cultivares_testados: numero total de cultivares testados
 num_total_de_parcelas_por_ensaio: numero total de parcelas por ensaio
-largo_promedio_m: comprimento médio em metros
-ancho_m: largura em metros
+comprimento_medio_m: comprimento médio em metros
+largura_m: largura em metros
 distancia_entre_fileras_cm: distância entre as fileiras em cm
 numero_de_fileras: número de fileiras
 solo: tipo de solo utilizado apra plantio
@@ -32,8 +41,7 @@ nan_mg_kg: nitrogenio potencialmente mineralizado (mg/kg)
 cultivo_antecesor: cultivo antecessor
 densidad_sementes_m2: densidade de semeadura em metros quadrados
 densidad_sementes_kg_ha: densidade de semeadura em kg/ha
-sistema: sistema de plantio (a máquina, a mão ou outro)
-semeadura: REMOVER
+sistema_de_plantio: sistema de plantio (a máquina, a mão ou outro)
 uso_de_fertilizante: combinação de fertilizantes utilizados (concentração - composto)
 uso_de_irrigacao: uso de irrigação (sim/não)
 uso_de_herbicida: momento de aplicação e de herbicidas utilizados (concentração - composto)
@@ -64,3 +72,4 @@ temp_setembro: média de temperatura registrada para o mês em graus Celsius (C�
 temp_outubro: média de temperatura registrada para o mês em graus Celsius (Cº)
 temp_novembro: média de temperatura registrada para o mês em graus Celsius (Cº)
 temp_dezembro: média de temperatura registrada para o mês em graus Celsius (Cº)
+ano: ano de realização do experimento

@@ -13,7 +13,7 @@ semeadura <- readxl::read_xlsx("Dados/Dados_Brutos/trigo_metadatos.xlsx", sheet 
 manejo <- readxl::read_xlsx("Dados/Dados_Brutos/trigo_metadatos.xlsx", sheet = "manejo", n_max = 51)
 chuva <- readxl::read_xlsx("Dados/Dados_Brutos/trigo_metadatos.xlsx", sheet = "lluvia", n_max = 51)
 temperatura <- readxl::read_xlsx("Dados/Dados_Brutos/trigo_metadatos.xlsx", sheet = "temperatura", n_max = 51)
-rendimento <- readxl::read_xlsx("Dados/Dados_Brutos/trigo_rendimiento.xlsx", n_max = 3078)
+rendimento <- readxl::read_xlsx("Dados/Dados_Brutos/trigo_rendimiento.xlsx", n_max = 5670)
 datas <- readxl::read_xlsx("Dados/Dados_Brutos/trigo_datas.xlsx", n_max =  8139)
 grupos <- read.csv("Dados/Dados_Brutos/grupos_qualidade.csv")
 de_para <- read_csv("Dados/Dados_Brutos/de_para.csv", show_col_types = FALSE)
@@ -140,18 +140,6 @@ local <- local %>%
   mutate(filename = str_replace(filename, "dados", "Dados"))%>%
   mutate(filename = str_replace(filename, "/dados", "/Dados"))
 
-# União dos dados e metadados -------------------------------------------------
-metadados <- left_join(local, desenho)
-metadados <- left_join(metadados, solo)
-metadados <- left_join(metadados,antecessor)
-metadados <- left_join(metadados,semeadura)
-metadados <- left_join(metadados,manejo)
-metadados <- left_join(metadados,chuva)
-metadados <- left_join(metadados,temperatura, by = "filename")
-metadados <- metadados%>%
-  mutate(filename = str_remove(filename, ".xlsx"))
-dados <- left_join(rendimento, metadados, by = "filename")
-
 # Correção da nomenclatura dos cultivares em Datas ------------------
 
 datas$cultivar <- trimws(datas$cultivar)|>
@@ -177,9 +165,25 @@ remove_last_repeated_word <- function(text) {
 
 datas$cultivar <- sapply(datas$cultivar, remove_last_repeated_word)
 
-unique(datas$cultivar)
+datas <- unique(datas)
 datas$Para <- NULL
+dados$cultivar.y <- NULL
+dados <- unique(dados)
+datas <- unique(datas)
+
 dados <- right_join(dados, datas, by = c("filename", "cultivar", "epoca", "ciclo", "fungicida"))
+
+# União dos dados e metadados -------------------------------------------------
+metadados <- left_join(local, desenho)
+metadados <- left_join(metadados, solo)
+metadados <- left_join(metadados,antecessor)
+metadados <- left_join(metadados,semeadura)
+metadados <- left_join(metadados,manejo)
+metadados <- left_join(metadados,chuva)
+metadados <- left_join(metadados,temperatura, by = "filename")
+metadados <- metadados%>%
+  mutate(filename = str_remove(filename, ".xlsx"))
+dados <- left_join(dados, metadados, by = "filename")
 
 # Padronização dos valores das tuplas de utilização de fungicida ---------------
 
@@ -264,83 +268,113 @@ for (i in 1:nrow(dados)) {
 dados$cultivo_antecesor <- str_replace(dados$cultivo_antecesor,"Maiz", "Maíz")
 dados$cultivo_antecesor <- str_replace(dados$cultivo_antecesor,"Soja 1°", "Soja")
 
-# FINALIZAR
-#Verificações ---------------------
 # Extração do ano---------------------------------------------------------------
 dados$ano <- NA
 for(i in 1:nrow(dados)){
   dados$ano[i] <- as.numeric(gsub("^.*\\/(\\d{4})-\\d{4}\\/.*$", "\\1", dados$filename[i]))
 
 }
-# # Organização nomenclatura -----------------------------------------------------
-# nomes <- c("nome_doc",
-#            "epoca",
-#            "ciclo",                                 
-#            "fungicida",                             
-#            "cultivar",                              
-#            "rep_i",                                 
-#            "rep_ii",                                
-#            "rep_iii",                               
-#            "rep_iv",                                
-#            "rep_v",                                 
-#            "subregiao",             
-#            "localidade",                             
-#            "coordenador_a",                         
-#            "colaborador_a",                         
-#            "subregiao_abrev",                               
-#            "subregiao_nome",                              
-#            "desenho_experimental",        
-#            "num_total_cultivares_intervinientes",
-#            "num_total_de_parcelas_por_ensaio",   
-#            "comprimento_medio_m",                      
-#            "largura_m",                               
-#            "distancia_entre_fileras_cm",            
-#            "numero_de_fileras",                     
-#            "solo",                                 
-#            "materia_organica_percentual",              
-#            "nitrogeno_ppm",                         
-#            "fosforo_ppm",                           
-#            "potasio_ppm",                           
-#            "tipo",                                  
-#            "textura",                               
-#            "nan_mg_kg",                             
-#            "cultivo_antecesor",                     
-#            "densidad_sementes_m2",                  
-#            "densidad_sementes_kg_ha",               
-#            "sistema",                               
-#            "semeadura",                               
-#            "uso_de_fertilizante",                   
-#            "uso_de_irrigacao",                          
-#            "uso_de_herbicida",                      
-#            "uso_de_fungicida",                      
-#            "uso_de_insecticida",                    
-#            "uso_de_outros_produtos",                
-#            "chuvas_janeiro",                               
-#            "chuvas_fevereiro",                             
-#            "chuvas_marco",                               
-#            "chuvas_abril",                               
-#            "chuvas_maio",                                
-#            "chuvas_junho",                               
-#            "chuvas_julho",                               
-#            "chuvas_agosto",                              
-#            "chuvas_setembro",                           
-#            "chuvas_outubro",                             
-#            "chuvas_novembro",                           
-#            "chuvas_dezembro",                           
-#            "temp_janeiro",                               
-#            "temp_fevereiro",                             
-#            "temp_marco",                               
-#            "temp_abril",                               
-#            "temp_maio",                                
-#            "temp_junho",                               
-#            "temp_julho",                             
-#            "temp_agosto",                           
-#            "temp_setembro",                           
-#            "temp_outubro",                           
-#            "temp_novembro",                          
-#            "temp_dezembro") 
-# colnames(dados) <- nomes
-# dados$semeadura <- NULL
 
+# Organização nomenclatura -----------------------------------------------------
+nomes <- c("nome_doc",
+           "epoca",
+           "ciclo",
+           "fungicida",
+           "cultivar",
+           "rep_i",
+           "rep_ii",
+           "rep_iii",
+           "rep_iv",
+           "rep_v",
+           "empresa",
+           "tipo_do_ciclo",
+           "inicio_ret",
+           "grupo__qualidade",
+           "data_de_plantio",
+           "data_de_espigacao",
+           "data_de_maturacao",
+           "dias_do_plantio_a_espigacao",
+           "dias_da_espigacao_a_maturacao",
+           "dias_do_plantio_a_maturacao",
+           "data_de_emergencia",
+           "subregiao",
+           "localidade",
+           "coordenador_a",
+           "colaborador_a",
+           "subregiao_abrev",
+           "subregiao_nome",
+           "desenho_experimental",
+           "num_total_cultivares_testados",
+           "num_total_de_parcelas_por_ensaio",
+           "comprimento_medio_m",
+           "largura_m",
+           "distancia_entre_fileras_cm",
+           "numero_de_fileras",
+           "solo",
+           "materia_organica_percentual",
+           "nitrogeno_ppm",
+           "fosforo_ppm",
+           "potasio_ppm",
+           "tipo",
+           "textura",
+           "nan_mg_kg",
+           "cultivo_antecesor",
+           "densidad_sementes_m2",
+           "densidad_sementes_kg_ha",
+           "sistema_de_plantio",
+           "semeadura",
+           "uso_de_fertilizante",
+           "uso_de_irrigacao",
+           "uso_de_herbicida",
+           "uso_de_fungicida",
+           "uso_de_insecticida",
+           "uso_de_outros_produtos",
+           "chuvas_janeiro",
+           "chuvas_fevereiro",
+           "chuvas_marco",
+           "chuvas_abril",
+           "chuvas_maio",
+           "chuvas_junho",
+           "chuvas_julho",
+           "chuvas_agosto",
+           "chuvas_setembro",
+           "chuvas_outubro",
+           "chuvas_novembro",
+           "chuvas_dezembro",
+           "temp_janeiro",
+           "temp_fevereiro",
+           "temp_marco",
+           "temp_abril",
+           "temp_maio",
+           "temp_junho",
+           "temp_julho",
+           "temp_agosto",
+           "temp_setembro",
+           "temp_outubro",
+           "temp_novembro",
+           "temp_dezembro",
+           "ano")
+colnames(dados) <- nomes
+dados$semeadura <- NULL
+dados$tipo_do_ciclo <- NULL
+dados$data_de_emergencia <- NULL
+# Formatação das datas e cálculos temporais
+dados$data_de_plantio <- ymd(dados$data_de_plantio)
+dados$data_de_espigacao <- ymd(dados$data_de_espigacao)
+dados$data_de_maturacao <- ymd(dados$data_de_maturacao)
+
+dados <- dados |> 
+  mutate(data_de_plantio = format(data_de_plantio, "%d-%m-%Y"))|> 
+  mutate(data_de_espigacao = format(data_de_espigacao, "%d-%m-%Y")) |> 
+  mutate(data_de_maturacao = format(data_de_maturacao, "%d-%m-%Y"))
+
+# Contagem dos dias
+
+for (i in 1:nrow(dados)) {
+  dados$dias_do_plantio_a_espigacao[i] <- time_length(as.period(interval(dmy(dados$data_de_plantio[i]), dmy(dados$data_de_espigacao[i]))),unit="days")
+  dados$dias_da_espigacao_a_maturacao[i] <- time_length(as.period(interval(dmy(dados$data_de_espigacao[i]), dmy(dados$data_de_maturacao[i]))),unit="days")
+  dados$dias_do_plantio_a_maturacao[i] <- time_length(as.period(interval(dmy(dados$data_de_plantio[i]), dmy(dados$data_de_maturacao[i]))),unit="days")
+}
 
 write.csv(dados, file = "Dados/Dados_processados/RET_ARG.csv")
+ 
