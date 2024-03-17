@@ -180,5 +180,51 @@ tb2 |>
 tb1 <- tb1[!grepl("CICLO", tb1$cultivar, ignore.case = TRUE), ]
 tb2 <- tb2[!grepl("CICLO", tb2$cultivar, ignore.case = TRUE), ]
 tb <- rbind(tb1, tb2)
+# FIXME: Quebrar `experimento` em `época`, `ciclo` e `fungicida`.
+tb$experimento <-
+  tb$experimento |>
+  # unique() |>
+  str_replace("º ÉPOCA: +", "_") |>
+  str_replace("CICLOS? +", "") |>
+  str_replace("(.*) (\\w+ FUNG.*)", "\\1_\\2")
+tb <- tb |>
+  separate(experimento,
+           into = c("epoca", "ciclo", "fungicida"),
+           sep = "_")
+
+tb |>
+  count(epoca, ciclo, fungicida, sort = TRUE)
+
+tb |>
+  count(cultivar, sort = TRUE) |>
+  print(n = Inf)
+
+# FIXME: Padronizar o nome dos cultivares.
+tb |>
+  mutate(cultivar = recode(cultivar,
+                           "QUIRIKO" = "QUIRICO",
+                           "NEO50T23" = "DM NEO 50T23",
+                           "NEO 30T23" = "DM NEO 30T23")) |>
+  count(cultivar, sort = TRUE) |>
+  print(n = Inf)
+
+# Trocar 0 por NA.
+tb2 <- tb |>
+  mutate(across(.cols = starts_with("rep_"),
+                .fns = ~replace(., . == 0, NA)))
+
+# Excluir linhas com todos NA.
+all_na <- tb |>
+  select(starts_with("rep_")) |>
+  apply(MARGIN = 1, function(x) {
+    all(is.na(x))
+  })
+
+for (i in nrow(tb):1) {
+  if (is.na(tb$fecha_de_siembra[i])) {
+    tb <- tb[-i, ]
+  }
+}
+
 tb |>
   writexl::write_xlsx("Dados/Dados_Brutos/trigo_datas.xlsx")

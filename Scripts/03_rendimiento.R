@@ -139,12 +139,6 @@ read_and_prepare2 <- function(path) {
   return(tb)
 }
 
-fix_text <- function(x) {
-  x |>
-    iconv(to = "ASCII//TRANSLIT") |>
-    str_to_upper() |>
-    str_replace_all(pattern = " +", replacement = " ")
-}
 
 tb <- map(fls, read_and_prepare2) |>
   bind_rows()
@@ -188,7 +182,7 @@ tb |>
   print(n = Inf)
 
 # Trocar 0 por NA.
-tb <- tb |>
+tb2 <- tb |>
   mutate(across(.cols = starts_with("rep_"),
                 .fns = ~replace(., . == 0, NA)))
 
@@ -198,14 +192,16 @@ all_na <- tb |>
   apply(MARGIN = 1, function(x) {
     all(is.na(x))
   })
+
 tb2$na_2 <- NULL
 tb2$na_3 <- NULL
 tb2$na_4 <- NULL
 tb2 <- tb2 %>%
   rename(rep_v = rep_vi)
-tb2 <- tb[!all_na, ]
+tb2 <- tb2[!all_na, ]
 
 #-----------------------------------------------------------------------
 tb <- rbind(tb1, tb2)
 tb |>
   writexl::write_xlsx("Dados/Dados_Brutos/trigo_rendimiento.xlsx")
+
