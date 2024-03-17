@@ -16,71 +16,15 @@ temperatura <- readxl::read_xlsx("Dados/Dados_Brutos/trigo_metadatos.xlsx", shee
 rendimento <- readxl::read_xlsx("Dados/Dados_Brutos/trigo_rendimiento.xlsx", n_max = 3078)
 datas <- readxl::read_xlsx("Dados/Dados_Brutos/trigo_datas.xlsx", n_max =  8139)
 grupos <- read.csv("Dados/Dados_Brutos/grupos_qualidade.csv")
+de_para <- read_csv("Dados/Dados_Brutos/de_para.csv")
+de_para <- unique(de_para)
+de_para$Para <- trimws(de_para$Para)
 
 # Padronização da nomenclatura de cultivares em rendimento -------------
 
 rendimento$cultivar <- trimws(rendimento$cultivar)|>
   str_to_upper()
 
-de_para <- data.frame("De" = c("B450", "BAG450",
-                               "B550", "BAG550",
-                               "B620", "BAG620",
-                               "B680","BAG680",
-                               "B750", "BAG750",
-                               "B820","BAG820",
-                               "BBRAVIOCL2",
-                               "BCOLIH",
-                               "BCUME" ,
-                               "BDEST",
-                               "BG620" ,
-                               "BGTTE 620",
-                               "BG680" ,
-                               "BG750",
-                               "BIOINTA 1006\r\n1006",
-                               "BIOINTA 1008\r\n1008",
-                               "BMET" ,
-                               "BMUT",
-                               "BPEREGR",
-                               "BUCK AMANCAY\r\nAMANCAY",
-                               "BUCK BRAVIO",
-                               "BUCK FULGOOR" , "BUCK FULGOR\r\nFULGOR",
-                               "DMCEIBO",
-                               "DMTBIO AUDAZ",
-                               "GINGKO", 
-                               "GUAYAVO","GUYABO", 
-                               "ISHORNERO\r\nHORNERO",
-                               "K.100ANOS", "K.CIEN ANOS", "KLEIN 100ANOS", "KLEIN CIEN AA'OS" ,"KLEIN CIEN ANOS",
-                               "KLFAVORI" ,
-                               "KLLIEBRE",
-                               "KLNUTR",
-                               "KLNUTRIA",
-                               "KLPROME",
-                               "KLTITANCL",
-                               "LGWA-11-01" ,"LGWA11" ,"LGWA11 (PAM)", "LGWA11 PAMPERO", "LGWA11-0169" ,"LGWA11-0169 (PAMPERO)",
-                               "MSINTA B. 817" , "MSINTA B817", "MSINTA BON817",
-                               "MSINTA MDABONAERENSE 122", "MSMB122","MSINTA MDABONAERENSE 221",
-                               "TBIOAUDAZ",
-                               "TUCELITE 17" ,
-                               "TUCELITE 43"),
-                      
-                      "Para" = c("BAGUETTE 450","BAGUETTE 450",
-                                 "BAGUETTE 550","BAGUETTE 550",
-                                 "BAGUETTE 620","BAGUETTE 620",
-                                 "BAGUETTE 680","BAGUETTE 680",
-                                 "BAGUETTE 750","BAGUETTE 750",
-                                 "BAGUETTE 820","BAGUETTE 820",
-                                 "BUCK BRAVIO CL2",
-                                 "BUCK COLIHUE" ,
-                                 "BUCK CUMELEN",
-                                 "BUCK DESTELLO",
-                                 "BAGUETTE 620","BAGUETTE 620",
-                                 "BAGUETTE 680",
-                                 "BAGUETTE 750",
-                                 "BIOINTA 1006",
-                                 "BIOINTA 1008",
-                                 "BUCK METEORO", 
-                                 "BUCK MUTISIA", "BUCK PEREGRINO","BUCK AMANCAY", "BUCK BRAVIO CL2", "BUCK FULGOR" , "BUCK FULGOR","CEIBO","DMTBIO\r\nAUDAZ", "GINKO", "GUAYABO","GUAYABO","ISHORNERO", "K. CIEN ANOS" ,"K. CIEN ANOS" ,"K. CIEN ANOS", "K. CIEN ANOS" ,"K. CIEN ANOS" , "KLEIN FAVORITO", "KLEIN LIEBRE",  "KLEIN NUTRIA"  , "KLEIN NUTRIA" , "KLEIN PROMETEO","KLEIN TITAN CL", 
-                                 "LGWA11 PAMPERO","LGWA11 PAMPERO","LGWA11 PAMPERO","LGWA11 PAMPERO","LGWA11 PAMPERO","LGWA11 PAMPERO", "MSINTA 817" ,"MSINTA 817" ,"MSINTA 817" ,"MSINTA BONAERENSE 122","MSINTA BONAERENSE 122","MSINTA BONAERENSE 221" ,"TBIO AUDAZ" , "TUCELITTE 17", "TUCELITTE 43"))
 rendimento <- left_join(rendimento, de_para, by = c("cultivar" = "De"))
 
 for(i in 1:nrow(rendimento)){
@@ -100,7 +44,6 @@ grupos$ano_class_qualidade <- NULL
 grupos$titular <- NULL
 grupos$NºRNC <- NULL
 grupos$variedade <- trimws(grupos$variedade)
-#grupos$variedade <- gsub("\\s+(\\.|\\!|\\?)\\s*$", "\\1", grupos$variedade)
 grupos$variedade <- gsub("ACA([0-9]+)", "ACA \\1", grupos$variedade)
 grupos$variedade <- gsub("MSINTA", "MS INTA", grupos$variedade)
 grupos$variedade <- str_to_upper(grupos$variedade)
@@ -109,30 +52,50 @@ grupos$variedade <- gsub("SY200 ", "SY200", grupos$variedade)
 grupos$cultivar <- gsub("DM.*", "", grupos$cultivar)
 grupos <- unique(grupos)
 # Identificação dos cultivares que precisam de correção:
-dados <- left_join(rendimento, grupos, by = c("cultivar" = "variedade"))
-a <- dados %>%
-  filter(is.na(empresa)) %>%
-  group_by(filename)
-sem_empresa <- unique(a$cultivar)
-print(sem_empresa)
-sem_empresa <- as.data.frame(sem_empresa)
-corrigido <- as.data.frame(sem_empresa)
-write_csv(corrigido, "Dados/Dados_Brutos/corrigido.csv")
-corrigido <- read.csv("Dados/Dados_Brutos/corrigido_de_para.csv")
-sem_empresa <- sem_empresa[-1,]
-empresas_corrigidas <- cbind(sem_empresa,corrigido)
-
+# dados <- left_join(rendimento, grupos, by = c("cultivar" = "variedade"))
+# a <- dados %>%
+#   filter(is.na(empresa)) %>%
+#   group_by(filename)
+# sem_empresa <- unique(a$cultivar)
+# print(sem_empresa)
+# sem_empresa <- as.data.frame(sem_empresa)
+# corrigido <- as.data.frame(sem_empresa)
+# write_csv(corrigido, "Dados/Dados_Brutos/corrigido.csv")
+# corrigido <- read.csv("Dados/Dados_Brutos/corrigido_de_para.csv")
+# corrigido <- corrigido[-c(43),]
+# corrigido <- as.data.frame(corrigido)
+# corrigido <- corrigido[-c(94),]
+# corrigido <- as.data.frame(corrigido)
+# corrigido <- corrigido[-c(93),]
+# corrigido <- as.data.frame(corrigido)
+# corrigido <- corrigido[-c(95), ]
+# sem_empresa<- as.data.frame(sem_empresa)
+# 
+# #sem_empresa <- sem_empresa[-1,]
+# 
+# empresas_corrigidas <- as.data.frame(cbind(sem_empresa,corrigido))
+# 
+# write_csv( empresas_corrigidas,"Dados/Dados_Brutos/de_para_empresas2.csv")
 # Correção
-dados  <- left_join(rendimento, empresas_corrigidas, by = c("cultivar" = "sem_empresa" ))
+dados  <- left_join(rendimento, grupos, by = c("cultivar" = "variedade" ))
 
-for(i in 1:nrow(dados)){
-  if( !is.na(dados$CORRIGIDO[i])){
-    dados$cultivar[i] <- dados$CORRIGIDO[i]
-  }
-}
+unique(dados$cultivar)
 
-dados$CORRIGIDO <- NULL
-dados$Para <- NULL
+sem_empresa <- dados%>%
+  filter(is.na(empresa))%>%
+  group_by(cultivar)%>%
+  count()
+
+
+
+# for(i in 1:nrow(dados)){
+#   if( !is.na(dados$CORRIGIDO[i])){
+#     dados$cultivar[i] <- dados$CORRIGIDO[i]
+#   }
+# }
+# 
+# dados$CORRIGIDO <- NULL
+# dados$Para <- NULL
 
 # Identificação da empresa
 
