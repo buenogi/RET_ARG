@@ -3,13 +3,14 @@
 
 library(tidyverse)
 
-#-----------------------------------------------------------------------
-# Importação de todas as tabelas.
+
+# Importação de todas as tabelas.-------------------------------
 
 fs::dir_tree(".")
 
 fls <- list.files(path = "Dados/Dados_Brutos", pattern = "^ret.*\\.xlsx$", recursive = TRUE, full.names = TRUE)
 
+# Função para leitura e extração das datas dpos expr com fungicida--------------
 read_and_prepare <- function(path) {
   tb <- readxl::read_xlsx(path, sheet = "Fechas") |>
     suppressMessages() |>
@@ -58,6 +59,7 @@ fix_text <- function(x) {
 
 resultados <- list()
 
+# Execução condicional para identificação de planilhas com formatação distinta
 
 posicoes_erro <- c()
 
@@ -143,6 +145,7 @@ fix_text <- function(x) {
 
 resultados <- list()
 
+# Execução condicional para identificação de planilhas com formatação distinta
 
 posicoes_erro <- c()
 
@@ -176,7 +179,7 @@ tb2 |>
 
 tb2 |>
   count(filename, experimento)
-
+# Consolidação e fechamento das tabelas ----------------------------------------
 tb1 <- tb1[!grepl("CICLO", tb1$cultivar, ignore.case = TRUE), ]
 tb2 <- tb2[!grepl("CICLO", tb2$cultivar, ignore.case = TRUE), ]
 tb <- rbind(tb1, tb2)
@@ -207,6 +210,7 @@ tb |>
                            "NEO 30T23" = "DM NEO 30T23")) |>
   count(cultivar, sort = TRUE) |>
   print(n = Inf)
+
 
 # Trocar 0 por NA.
 tb2 <- tb |>

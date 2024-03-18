@@ -3,13 +3,13 @@
 
 library(tidyverse)
 
-#-----------------------------------------------------------------------
-# Importação de todas as tabelas.
+# Importação de todas as tabelas.-----------------------------------------------
 
 fs::dir_tree(".")
 
 fls <- list.files(path = "Dados/Dados_Brutos", pattern = "^ret.*\\.xlsx$", recursive = TRUE, full.names = TRUE)
 
+# Extração dos experimentos sem fungicida --------------------------------------
 read_and_prepare <- function(path) {
   tb <- readxl::read_xlsx(path, sheet = "Rendimiento") |>
     suppressMessages() |>
@@ -104,7 +104,7 @@ all_na <- tb |>
   })
 
 tb1 <- tb[!all_na, ]
-#-----------------------------------------------------------------------
+# Extração de experimentos com fungicida ----------
 
 read_and_prepare2 <- function(path) {
   tb <- readxl::read_xlsx(path, sheet = "Rendimiento") |>
@@ -200,7 +200,7 @@ tb2 <- tb2 %>%
   rename(rep_v = rep_vi)
 tb2 <- tb2[!all_na, ]
 
-#-----------------------------------------------------------------------
+# União e consolidação dos dados de rendimento----------------------------------
 tb <- rbind(tb1, tb2)
 tb |>
   writexl::write_xlsx("Dados/Dados_Brutos/trigo_rendimiento.xlsx")
