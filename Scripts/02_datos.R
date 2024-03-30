@@ -215,6 +215,6 @@ sheets[["temperatura"]] <-
     janitor::clean_names()
 View(sheets[["temperatura"]])
 
-writexl::write_xlsx(sheets, "Dados/Dados_Brutos/trigo_metadatos.xlsx")
+writexl::write_xlsx(sheets, "Dados/Dados_Brutos/extraidos/trigo_metadatos.xlsx")
 
 #-----------------------------------------------------------------------

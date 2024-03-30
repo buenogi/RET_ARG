@@ -140,6 +140,8 @@ read_and_prepare2 <- function(path) {
 }
 
 
+
+
 tb <- map(fls, read_and_prepare2) |>
   bind_rows()
 str(tb)
@@ -203,5 +205,5 @@ tb2 <- tb2[!all_na, ]
 # União e consolidação dos dados de rendimento----------------------------------
 tb <- rbind(tb1, tb2)
 tb |>
-  writexl::write_xlsx("Dados/Dados_Brutos/trigo_rendimiento.xlsx")
+  writexl::write_xlsx("Dados/Dados_Brutos/extraidos/trigo_rendimiento.xlsx")
 

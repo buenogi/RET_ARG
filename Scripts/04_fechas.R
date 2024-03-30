@@ -231,4 +231,4 @@ for (i in nrow(tb):1) {
 }
 
 tb |>
-  writexl::write_xlsx("Dados/Dados_Brutos/trigo_datas.xlsx")
+  writexl::write_xlsx("Dados/Dados_Brutos/extraidos/trigo_datas.xlsx")

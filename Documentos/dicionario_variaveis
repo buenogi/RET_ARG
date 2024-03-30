@@ -1,4 +1,3 @@
-nome_doc: Nome do documento
 epoca: ordem de época de semeadura
 ciclo: tipo de ciclo (curto, intermediário/longo)
 fungicida: aplicação ou não de fungicida
@@ -17,10 +16,7 @@ data_de_maturacao: data de maturação
 dias_do_plantio_a_espigacao: período de tempo do plantio à espigação, em dias
 dias_da_espigacao_a_maturacao: período de tempo da espigação à maturação, em dias
 dias_do_plantio_a_maturacao: periodo de tempo do plantio à maturação, em dias
-subregiao: subregião de realização do ensaio
 localidade: localidade de realização do ensaio
-coordenador_a: responsável pela realização do ensaio
-colaborador_a: equipe envolvida na realização do ensaio
 subregiao_abrev: abreviatura da subregião de realização do ensaio
 subregiao_nome: nome completo da subregião de realização do ensaio
 desenho_experimental: desenho experimental adotado

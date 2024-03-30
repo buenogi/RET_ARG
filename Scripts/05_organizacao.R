@@ -5,16 +5,16 @@ library(tidyverse)
 
 # Leitura dos dados extraídos --------------------------------------------------
 
-local <- readxl::read_xlsx("Dados/Dados_Brutos/trigo_metadatos.xlsx", sheet = "local", n_max = 51)
-desenho <- readxl::read_xlsx("Dados/Dados_Brutos/trigo_metadatos.xlsx", sheet = "diseño", n_max = 50)
-solo <- readxl::read_xlsx("Dados/Dados_Brutos/trigo_metadatos.xlsx", sheet = "suelo", n_max = 51)
-antecessor <- readxl::read_xlsx("Dados/Dados_Brutos/trigo_metadatos.xlsx", sheet = "antecesor", n_max = 51)
-semeadura <- readxl::read_xlsx("Dados/Dados_Brutos/trigo_metadatos.xlsx", sheet = "siembra", n_max = 51)
-manejo <- readxl::read_xlsx("Dados/Dados_Brutos/trigo_metadatos.xlsx", sheet = "manejo", n_max = 51)
-chuva <- readxl::read_xlsx("Dados/Dados_Brutos/trigo_metadatos.xlsx", sheet = "lluvia", n_max = 51)
-temperatura <- readxl::read_xlsx("Dados/Dados_Brutos/trigo_metadatos.xlsx", sheet = "temperatura", n_max = 51)
-rendimento <- readxl::read_xlsx("Dados/Dados_Brutos/trigo_rendimiento.xlsx", n_max = 5670)
-datas <- readxl::read_xlsx("Dados/Dados_Brutos/trigo_datas.xlsx", n_max =  8139)
+local <- readxl::read_xlsx("Dados/Dados_Brutos/extraidos/trigo_metadatos.xlsx", sheet = "local", n_max = 51)
+desenho <- readxl::read_xlsx("Dados/Dados_Brutos/extraidos/trigo_metadatos.xlsx", sheet = "diseño", n_max = 50)
+solo <- readxl::read_xlsx("Dados/Dados_Brutos/extraidos/trigo_metadatos.xlsx", sheet = "suelo", n_max = 51)
+antecessor <- readxl::read_xlsx("Dados/Dados_Brutos/extraidos/trigo_metadatos.xlsx", sheet = "antecesor", n_max = 51)
+semeadura <- readxl::read_xlsx("Dados/Dados_Brutos/extraidos/trigo_metadatos.xlsx", sheet = "siembra", n_max = 51)
+manejo <- readxl::read_xlsx("Dados/Dados_Brutos/extraidos/trigo_metadatos.xlsx", sheet = "manejo", n_max = 51)
+chuva <- readxl::read_xlsx("Dados/Dados_Brutos/extraidos/trigo_metadatos.xlsx", sheet = "lluvia", n_max = 51)
+temperatura <- readxl::read_xlsx("Dados/Dados_Brutos/extraidos/trigo_metadatos.xlsx", sheet = "temperatura", n_max = 51)
+rendimento <- readxl::read_xlsx("Dados/Dados_Brutos/extraidos/trigo_rendimiento.xlsx", n_max = 5670)
+datas <- readxl::read_xlsx("Dados/Dados_Brutos/extraidos/trigo_datas.xlsx", n_max =  8139)
 grupos <- read.csv("Dados/Dados_Brutos/grupos_qualidade.csv")
 de_para <- read_csv("Dados/Dados_Brutos/de_para.csv", show_col_types = FALSE)
 de_para <- unique(de_para)
@@ -112,7 +112,7 @@ dados <- left_join(dados, grupos, by = c("cultivar" = "variedade"))
 
 sem_empresa <- dados%>%
   filter(is.na(empresa))%>%
-  group_by(filename)%>%
+  group_by(cultivar)%>%
   count()
 
 sem_empresa2 <- dados%>%
@@ -358,6 +358,11 @@ colnames(dados) <- nomes
 dados$semeadura <- NULL
 dados$tipo_do_ciclo <- NULL
 dados$data_de_emergencia <- NULL
+dados$nome_doc <- NULL
+dados$coordenador_a <- NULL
+dados$colaborador_a <- NULL
+dados$subregiao <- NULL
+
 # Formatação das datas e cálculos temporais
 dados$data_de_plantio <- ymd(dados$data_de_plantio)
 dados$data_de_espigacao <- ymd(dados$data_de_espigacao)
