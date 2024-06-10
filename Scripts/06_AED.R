@@ -430,8 +430,168 @@ ggplot(dados) +
   meutema() +
   facet_wrap(~ ano, nrow = 1)
 
-# Tempo médio de espigamento
+# Tempo médio de espigamentos
 # Tempo médio de maturação
 
+
+
+
+
+```{r}
+
+
+ggplot(dados) +
+  aes(x = empresa, fill = grupo__qualidade, weight = ano) +
+  geom_bar() +
+  scale_fill_hue(direction = 1) +
+  coord_flip() +
+  theme_minimal()
+dados%>%
+  group_by(grupo__qualidade,subregiao_nome, ano)%>%
+  summarise(media_rend = mean(rendimento_medio))%>%
+  ggplot() +
+  aes(x = grupo__qualidade, y = media_rend, colour = factor(ano)) +
+  geom_point(shape = "circle", size = 1.5) +
+  scale_color_discrete() +
+  theme_minimal() +
+  facet_wrap(vars(subregiao_nome))
+```
+# Tempo médio de espigamento
+```{r}
+duracao <- dados%>%
+  group_by(ano, subregiao_abrev, empresa, grupo__qualidade)%>%
+  summarise(media_dur_esp = mean(dias_do_plantio_a_espigacao),
+            media_dur_maturacao = mean(dias_do_plantio_a_maturacao))
+
+duracao <- duracao[duracao$media_dur_esp >= 0, , drop = FALSE]
+duracao <- duracao[!is.na(duracao$media_dur_esp), , drop = FALSE]
+
+ggplot(duracao) +
+  aes(y = media_dur_esp, group = grupo__qualidade, fill = grupo__qualidade) +
+  geom_boxplot(alpha = 0.5) +
+  meutema() +
+  facet_wrap(vars(ano),ncol = 1, nrow = 4)
+
+
+
+```
+
+
+# Tempo médio de maturação
+
+```{r}
+
+duracao <- dados%>%
+  group_by(ano, subregiao_abrev, empresa, grupo__qualidade)%>%
+  summarise(media_dur_esp = mean(dias_do_plantio_a_espigacao),
+            media_dur_maturacao = mean(dias_do_plantio_a_maturacao))
+
+duracao <- duracao[duracao$media_dur_maturacao >= 0, , drop = FALSE]
+duracao <- duracao[!is.na(duracao$media_dur_maturacao), , drop = FALSE]
+ggplot(duracao) +
+  aes(y = media_dur_maturacao, group = grupo__qualidade, fill = grupo__qualidade) +
+  geom_boxplot(alpha = 0.5) +
+  meutema() +
+  facet_wrap(vars(ano),ncol = 1, nrow = 4)
+```
+
+
+# Análise dos experimentos
+
+```{r, ANOVA - Rendimento~Cultivar}
+pesos <- 1 / table(dados$cultivar)[dados$cultivar]
+
+modelo_anova <- aov(rendimento_medio ~ cultivar, data = dados, weights = pesos)
+
+summary(modelo_anova)
+```
+```{r, ANOVA - Rendimento~Cultivar*Localidade}
+pesos <- 1 / table(interaction(dados$cultivar, dados$localidade))[interaction(dados$cultivar, dados$localidade)]
+
+modelo_anova <- aov(rendimento_medio ~ cultivar+localidade, data = dados, weights = pesos)
+
+summary(modelo_anova)
+```
+```{r, ANOVA - Rendimento~Cultivar*Localidade*Ano}
+
+pesos <- 1 / table(interaction(dados$cultivar, dados$localidade, dados$ano))[interaction(dados$cultivar, dados$localidade, dados$ano)]
+
+modelo_anova <- aov(rendimento_medio ~ cultivar + localidade + ano, data = dados, weights = pesos)
+
+summary(modelo_anova)
+
+```
+
+
+```{r, 2021}
+dados_ano_2021 <- dados%>%
+  filter(ano == "2021")
+
+dados_ano_2022 <- dados%>%
+  filter(ano == "2022")
+
+dados_ano_2023 <- dados%>%
+  filter(ano == "2023")
+
+dados_2021_CORTOS <- dados_ano_2021%>%
+  filter(ciclo == "CORTOS")
+
+dados_2021_CORTOS_INTERMEDIOS <- dados_ano_2021%>%
+  filter(ciclo == "CORTOS E INTERMEDIOS")
+
+dados_2021_LARGOS_INTERMEDIOS <- dados_ano_2021%>%
+  filter(ciclo == "LARGOS E INTERMEDIOS")
+
+dados_2021_LARGOS <- dados_ano_2021%>%
+  filter(ciclo == "LARGOS")
+
+dados_2022_CORTOS <- dados_ano_2022%>%
+  filter(ciclo == "CORTOS")
+
+dados_2022_CORTOS_INTERMEDIOS <- dados_ano_2022%>%
+  filter(ciclo == "CORTOS E INTERMEDIOS")
+
+dados_2022_LARGOS_INTERMEDIOS <- dados_ano_2022%>%
+  filter(ciclo == "LARGOS E INTERMEDIOS")
+
+dados_2022_LARGOS <- dados_ano_2022%>%
+  filter(ciclo == "LARGOS")
+
+dados_2023_CORTOS <- dados_ano_2023%>%
+  filter(ciclo == "CORTOS")
+
+dados_2023_CORTOS_INTERMEDIOS <- dados_ano_2023%>%
+  filter(ciclo == "CORTOS E INTERMEDIOS")
+
+dados_2023_LARGOS_INTERMEDIOS <- dados_ano_2023%>%
+  filter(ciclo == "LARGOS E INTERMEDIOS")
+
+dados_2023_LARGOS <- dados_ano_2023%>%
+  filter(ciclo == "LARGOS")
+
+```
+
+
+```{r}
+pesos <- 1 / table(dados_2021_CORTOS$cultivar)[dados_2021_CORTOS$cultivar]
+
+modelo_anova <- aov(rendimento_medio ~ cultivar, data = dados_2021_CORTOS, weights = pesos)
+
+summary(modelo_anova)
+```
+
+]```{r}
+dados_sf <- read_sf(dsn = "../Dados/mapa_subregiones_formato_gis_2021-06-19/Subregiones 2021.shp")
+
+dados_sf |>
+  dplyr::select(1:SUB_ANTER) |>
+  sf::st_drop_geometry() |>
+  dplyr::arrange(SUB_NUM)
+
+ggplot(data = dados_sf) +
+  geom_sf() +
+  theme_minimal()
+
+```
 
 

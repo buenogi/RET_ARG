@@ -10,28 +10,28 @@ library(tidyverse)
 # Importação dos arquivos shapefile.
 
 # Definir o caminho para o arquivo shapefile (.shp).
-caminho_arquivo <- "mapa_subregiones_formato_gis_2021-06-19/Subregiones 2021.shp"
+caminho_arquivo <- "Dados/mapa_subregiones_formato_gis_2021-06-19/Subregiones 2021.shp"
 
 # Ler o arquivo shapefile
-dados_shapefile <- readOGR(dsn = caminho_arquivo)
+dados_shapefile <- read_sf(dsn = caminho_arquivo)
 str(dados_shapefile)
 
-# Converter para sf.
-dados_sf <- st_as_sf(dados_shapefile)
-str(dados_sf)
+# # Converter para sf.
+# dados_sf <- st_as_sf(dados_shapefile)
+# str(dados_sf)
 
-dados_sf |>
+dados_shapefile |>
     dplyr::select(1:SUB_ANTER) |>
     sf::st_drop_geometry() |>
     dplyr::arrange(SUB_NUM)
 
 # Visualização com ggplot2.
-ggplot(data = dados_sf) +
+ggplot(data = dados_shapefile) +
     geom_sf() +
     theme_minimal()
 
 # Visualização com leaflet.
-mapa_leaflet <- leaflet(data = dados_sf) %>%
+mapa_leaflet <- leaflet(data = dados_shapefile) %>%
     addProviderTiles("OpenStreetMap.Mapnik") %>%
     addPolygons(fillColor = "orange", stroke = TRUE, fillOpacity = 0.3)
 
@@ -45,13 +45,19 @@ library(rmapshaper)
 ls("package:rmapshaper")
 
 # Simplificar o mapa.
-dados_sf_simplificado <- ms_simplify(dados_sf, keep = 0.01)
+dados_sf_simplificado <- ms_simplify(dados_shapefile, keep = 0.01)
 
-dados_sf_simplificado |>
+coordenadas <- dados_sf_simplificado |>
     sf::st_centroid()
+
+coordenadas <- coordenadas %>% 
+  mutate(centroid  = gsub('[()°]', '', centroid )) %>% 
+  separate(col = centroid  , into = c('Latitude', 'Longitude '), sep = '\\,')
 
 dados_sf_simplificado$centroid <-
     sf::st_centroid(dados_sf_simplificado$geometry)
+
+
 
 dados_sf_simplificado$area <-
     sf::st_area(dados_sf_simplificado$geometry) |>
