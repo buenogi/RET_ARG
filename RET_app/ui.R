@@ -39,7 +39,7 @@ ui <- grid_page(
       conditionalPanel(
         condition = "input.filtro == 'empresa'",
         selectInput(
-          inputId = "empresa_selecionada",
+          inputId = "selecao_empresa",
           label = "Selecione a empresa:",
           choices = dados$empresa
         ),
@@ -48,7 +48,7 @@ ui <- grid_page(
       conditionalPanel(
         condition = "input.filtro == 'localidade'",
         selectInput(
-          inputId = "localidade_selecionada",
+          inputId = "selecao_localidade",
           label = "Selecione a localidade:",
           choices = dados$localidade
         )
@@ -57,7 +57,7 @@ ui <- grid_page(
       conditionalPanel(
         condition = "input.filtro == 'cultivar'",
         selectInput(
-          inputId = "cultivar_selecionada",
+          inputId = "selecao_cultivar",
           label = "Selecione a cultivar:",
           choices = dados$cultivar
         #uiOutput("cultivar_ui")

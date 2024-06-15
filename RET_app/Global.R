@@ -69,6 +69,29 @@ extracao_coordenadas <- function(dados, caminho_arquivo){
   return(dados)
 }
 
+# Filtragem
+
+# selecao <- ifelse(filtro == "empresa", empresa_selecionada, 
+#                   ifelse(filtro == "localidade", localidade_selecionada, cultivar_selecionado))
+
+filtroSelecao <- function(dados, filtro, selecao){
+  if(filtro == "empresa"){
+    dados_filtrados <- dados%>%
+      filter(empresa == selecao)
+  }
+  if(filtro == "localidade"){
+    dados_filtrados <- dados%>%
+      filter(localidade == selecao)
+  } 
+  if(filtro == "cultivar"){
+    dados_filtrados <- dados%>%
+      filter(cultivar == selecao)
+  }
+  return(dados_filtrados)
+}
+
+
+
 # 3ª FUNÇÃO - Filtragem ano e seleção de empresa ---------------------------
 get_opcoes_ano_empresa <- function(dados, ano, grupo__qualidade) {
   opcoes <- switch(
