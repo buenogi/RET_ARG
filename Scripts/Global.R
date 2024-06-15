@@ -2,7 +2,7 @@
 ##### Análises confirmatórias e modularização para construção do dashboard #####
 ################################################################################
 
-#  Dados -----------------------------------------------------------------------
+# Dados -----------------------------------------------------------------------
 dados <- read.csv("Dados/Dados_processados/RET_ARG.csv")
 
 # Pré-procesamento -------------------------------------------------------------
@@ -47,7 +47,7 @@ meutema <- function() {
 # Extração das coordenadas ------------------------------------------------------
 caminho_arquivo <- "Dados/mapa_subregiones_formato_gis_2021-06-19/Subregiones 2021.shp"
 
-extracao_coordenadas <- function(caminho){
+extracao_coordenadas <- function(dados, caminho){
   dados_shapefile <- read_sf(dsn = caminho_arquivo)
   dados_shapefile <- st_make_valid(dados_shapefile)
   dados_shapefile <- st_transform(dados_shapefile, crs = 4326)
@@ -58,21 +58,49 @@ extracao_coordenadas <- function(caminho){
   
   dados_shapefile$Longitude <- coords[, "X"]
   dados_shapefile$Latitude <- coords[, "Y"]
-  # 
-  # coords <- st_coordinates(dados_shapefile)
-  # 
-  # dados_shapefile <- st_transform(dados_shapefile, crs = 4326)
-  # 
-  # dados_sf_simplificado$centroid <-
-  #   sf::st_centroid(dados_sf_simplificado$geometry)
-  # 
-  # coord <- dados_sf_simplificado%>% 
-  #   mutate(centroid = gsub('[()°]', '', centroid )) %>% 
-  #   separate(col = centroid  , into = c('Latitude', 'Longitude'), sep = '\\,')
-  # coord$Latitude <- gsub("c", "", coord$Latitude)
-  return(dados_shapefile)
+  
+  dados <- dados%>%
+    mutate(subregiao_abrev = str_extract(subregiao_abrev, "^.{1,3}"))
+  dados <- left_join(dados, dados_shapefile, by = c("subregiao_abrev"="SUB_ABR"))
+  return(dados)
 }
-coordenadas <- extracao_coordenadas(caminho_arquivo)
+
+extracao_coordenadas <- function(dados, caminho_arquivo){
+  # Ler o shapefile a partir do caminho fornecido
+  dados_shapefile <- read_sf(dsn = caminho_arquivo)
+  
+  # Garantir que o shapefile é válido
+  dados_shapefile <- st_make_valid(dados_shapefile)
+  
+  # Transformar a projeção para WGS 84 (EPSG:4326)
+  dados_shapefile <- st_transform(dados_shapefile, crs = 4326)
+  
+  # Calcular os centroides das geometrias
+  dados_shapefile <- dados_shapefile %>%
+    st_centroid()
+  
+  # Extrair as coordenadas dos centroides
+  coords <- st_coordinates(dados_shapefile)
+  
+  # Adicionar as coordenadas como novas colunas no shapefile
+  dados_shapefile$Longitude <- coords[, "X"]
+  dados_shapefile$Latitude <- coords[, "Y"]
+  
+  # Manter apenas as colunas necessárias
+  dados_shapefile <- dados_shapefile %>%
+    select(SUB_ABR, Longitude, Latitude)
+  
+  # Ajustar a coluna 'subregiao_abrev' no dataframe de dados
+  dados <- dados %>%
+    mutate(subregiao_abrev = str_extract(subregiao_abrev, "^.{1,3}"))
+  
+  # Realizar a junção entre os dados e o shapefile baseado na subregiao_abrev e SUB_ABR
+  dados <- left_join(dados, dados_shapefile, by = c("subregiao_abrev" = "SUB_ABR"))
+  
+  return(dados)
+}
+
+coordenadas <- extracao_coordenadas(dados, caminho_arquivo)
 # Inclusão das coordenadas na tabela principal ---------------------------------
 
 dados <- dados%>%
