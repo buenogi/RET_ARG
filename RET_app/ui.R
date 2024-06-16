@@ -2,6 +2,7 @@ library(shiny)
 library(plotly)
 library(gridlayout)
 library(bslib)
+library(leaflet)
 library(DT)
 
 ui <- grid_page(
@@ -79,7 +80,12 @@ ui <- grid_page(
     card_header("Table"),
     card_body(DTOutput(outputId = "table", width = "100%"))
   ),
-  grid_card_plot(area = "bluePlot"),
+  grid_card(
+    area = "bluePlot",
+    card_body(
+      leafletOutput(outputId = "plot2"))
+    
+  ),
   grid_card(
     area = "area7",
     card_body(
@@ -92,7 +98,10 @@ ui <- grid_page(
   ),
   grid_card(
     area = "area8",
-    card_body(plotOutput(outputId = "plot"))
+    card_body(
+      #plotOutput("plot1")
+      plotlyOutput("plot1")
+    )
   ),
   grid_card(
     area = "area6",

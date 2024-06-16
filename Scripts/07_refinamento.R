@@ -8,7 +8,7 @@ dados <- read.csv("Dados/Dados_processados/RET_ARG.csv")
 dados$rep_v <- NULL
 dados <- dados %>% filter(!is.na(rep_i))
 
-# TRadução dos grupos de qualidade
+# Tradução dos grupos de qualidade
 dados$grupo__qualidade <- gsub("GRUPO DE CALIDAD 1", "Grupo de qualidade 1",
                                dados$grupo__qualidade)
 dados$grupo__qualidade <- gsub("GRUPO DE CALIDAD 2", "Grupo de qualidade 2",

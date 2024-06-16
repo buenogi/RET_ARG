@@ -5,6 +5,9 @@ library(leaflet)
 library(sf)
 library(tidyverse)
 library(dplyr)
+library(leaflet)
+library(sf)
+library(dplyr)
 
 # 1ª FUNÇÃO - Tema para os gráficos --------------------------------------------------------
 
@@ -69,10 +72,7 @@ extracao_coordenadas <- function(dados, caminho_arquivo){
   return(dados)
 }
 
-# Filtragem
-
-# selecao <- ifelse(filtro == "empresa", empresa_selecionada, 
-#                   ifelse(filtro == "localidade", localidade_selecionada, cultivar_selecionado))
+# 3º FUNÇÃO - Filtragem------------
 
 filtroSelecao <- function(dados, filtro, selecao){
   if(filtro == "empresa"){
@@ -91,63 +91,165 @@ filtroSelecao <- function(dados, filtro, selecao){
 }
 
 
-
-# 3ª FUNÇÃO - Filtragem ano e seleção de empresa ---------------------------
-get_opcoes_ano_empresa <- function(dados, ano, grupo__qualidade) {
-  opcoes <- switch(
-    as.character(ano),
-    "2021"  = {
-      dados %>%
-        filter(ano == 2021 & grupo__qualidade == grupo__qualidade) %>%
-        pull(empresa)
-    },
-    "2022"  = {
-      dados %>%
-        filter(ano == 2022 & grupo__qualidade == grupo__qualidade) %>%
-        pull(empresa)
-    },
-    "2023"  = {
-      dados %>%
-        filter(ano == 2023 & grupo__qualidade == grupo__qualidade) %>%
-        pull(empresa)
+# 5º FUNÇÃO - Cálculo do rendimento médio ------------------------------------
+  
+  CalcRendimento <- function(dados) {
+    
+    for (i in 1:nrow(dados)) {
+      dados$rendimento_medio[i] <- mean(c(dados$rep_i[i], dados$rep_ii[i], dados$rep_iii[i], dados$rep_iv[i]), na.rm = TRUE)
+      dados$rendimento_desvio[i] <- sd(c(dados$rep_i[i], dados$rep_ii[i], dados$rep_iii[i], dados$rep_iv[i]), na.rm = TRUE)
     }
-  )
-  return(unique(opcoes))
-}
-
-
-# 4º FUNÇÃO - Filtragem localidade ---------------------------------------------
-
-get_opcoes_localidade <- function(dados,ano, grupo__qualidade, selecionar_empresa, empresa_selecionada){
-  if (selecionar_empresa == T & !is.null(empresa_selecionada)) {
-    opcoes <- dados %>%
-      filter(ano == ano & grupo__qualidade == grupo__qualidade & empresa == empresa_selecionada)
-  } else {
-    opcoes <- dados
+    
+    return(dados)
   }
-  opcoes <- opcoes %>%
-    select(subregiao_nome)
-  return(unique(opcoes))
-}
 
+# 6º FUNÇÃO - Gerar caterpilar plot
 
-# 5ª FUNÇÃO - Filtragem de localidade ------------------------------------------
+# caterpilar <- function(dados, selecao){
+#   
+#   caterpilar_plot <- dados %>%
+#     select(ano, fungicida, selecao, rendimento_medio, ciclo) %>%
+#     group_by(localidade) %>%
+#     summarise(
+#       mean_rendimento = mean(rendimento_medio, na.rm = TRUE),
+#       sd_rendimento = sd(rendimento_medio, na.rm = TRUE)
+#     ) %>%
+#     ungroup() %>%
+#     ggplot(aes(x = reorder(selecao, mean_rendimento, decreasing = F), y = mean_rendimento,
+#     )) +
+#     geom_point() +
+#     geom_errorbar(aes(ymin = mean_rendimento - sd_rendimento, ymax = mean_rendimento + sd_rendimento), width = 0.2) +
+#     coord_flip() +
+#     #facet_wrap(vars(fungicida), nrow = 3) +
+#     labs(x = paste0(selecao), y = "Rendimento médio (ton/ha)") +
+#     meutema()
+#   return(caterpilar_plot)
+# }
 
-get_opcoes_cultivar <- function(dados, ano, grupo__qualidade, selecionar_empresa, selecionar_localidade, empresa_selecionada, localidade_selecionada){
-  if (selecionar_empresa == T && !is.null(empresa_selecionada) && selecionar_localidade == T && !is.null(localidade_selecionada)) {
-    opcoes <- dados %>%
-      filter(ano == ano & grupo__qualidade == grupo__qualidade & empresa == empresa_selecionada & localidade == localidade_selecionada)
-  } else if (selecionar_empresa == T && !is.null(empresa_selecionada)) {
-    opcoes <- dados %>%
-      filter(ano == ano & grupo__qualidade == grupo__qualidade & empresa == empresa_selecionada)
-  } else if (selecionar_localidade == T && !is.null(localidade_selecionada)) {
-    opcoes <- dados %>%
-      filter(ano == ano & grupo__qualidade == grupo__qualidade & localidade == localidade_selecionada)
+caterpilar <- function(dados, filtro) {
+  if(filtro == "cultivar"){
+    variavel <- localidade
   } else {
-    opcoes <- dados
+    variavel <- cultivar
   }
-  opcoes <- opcoes %>%
-    select(cultivar)
-  return(opcoes)
+  caterpilar_plot <- dados %>%
+    select(ano, fungicida, variavel, rendimento_medio, ciclo) %>%
+    group_by(!!variavel) %>%
+    summarise(
+      mean_rendimento = mean(rendimento_medio, na.rm = TRUE),
+      sd_rendimento = sd(rendimento_medio, na.rm = TRUE)
+    ) %>%
+    ungroup() %>%
+    ggplot(aes(x = reorder(variavel, mean_rendimento, decreasing = F), y = mean_rendimento)) +
+    geom_point() +
+    geom_errorbar(aes(ymin = mean_rendimento - sd_rendimento, ymax = mean_rendimento + sd_rendimento), width = 0.2) +
+    coord_flip() +
+    #labs(x = paste0(filtro), y = "Rendimento médio (ton/ha)") +
+    theme_minimal()  # Supondo que `meutema()` seja um tema customizado
+  return(caterpilar_plot)
 }
 
+# Exemplo de uso
+# Assumindo que o dataframe `dados` existe e tem as colunas apropriadas
+
+# 6º FUNÇÃO - Cria o mapa
+
+mapa <- function(shapefile, dados, filtro) {
+
+  set.seed(123)  
+    dados <- dados %>%
+      mutate(
+        Latitude_jitter = Latitude + runif(n(), min = -0.5, max = 0.5),
+        Longitude_jitter = Longitude + runif(n(), min = -0.5, max = 0.5)
+      )
+    
+  mapa_leaflet <- leaflet(data = shapefile) %>%
+    addProviderTiles("Esri.WorldTopoMap") %>%
+    addPolygons(fillColor = "#392502", color = "#392502", stroke = TRUE, fillOpacity = 0.5)%>%
+        addCircleMarkers(data = dados, lat = ~Latitude_jitter, lng = ~Longitude_jitter,
+                         radius = ~sqrt(rendimento_medio) / 4,
+                         color = "#00525b",
+                         fillOpacity = 0.7,
+                         label = ~paste("Rendimento:", round(rendimento_medio, 2),"kg/ha"))
+
+  return(mapa_leaflet)
+}
+
+
+
+# mapa <- function(caminho_arquivo, dados, filtro) {
+#  
+#   # Carregar dados do shapefile
+#   dados_shapefile <- read_sf(dsn = caminho_arquivo)
+#   
+#   # # Converter Latitude e Longitude para numérico
+#   # dados$Latitude <- as.numeric(dados$Latitude)
+#   # dados$Longitude <- as.numeric(dados$Longitude)
+#   # 
+#   # # Definir cor 
+#   # cor <- "#00525b"
+#   # 
+#   # # Garantir que 'empresa' seja um fator
+#   # dados$filtro <- factor(dados$filtro)
+#   # 
+#   # # Definir tamanhos para a legenda
+#   # sizes <- c(sqrt(fivenum(dados$media)[1]),
+#   #            sqrt(fivenum(dados$media)[2]),
+#   #            sqrt(fivenum(dados$media)[3]),
+#   #            sqrt(fivenum(dados$media)[5]))
+#   # 
+#   # # Calcular os intervalos para a legenda com base nos tamanhos
+#   # media_max <- max(dados$media)
+#   # intervalos <- seq(0, max(dados$media), length.out = length(sizes) + 1)
+#   # labels <- paste0(round(intervalos[-length(intervalos)]), "-", round(intervalos[-1]))
+#   # 
+#   # # Adicionar um pequeno deslocamento aleatório às coordenadas
+#   # set.seed(123)  
+#   # dados <- dados %>%
+#   #   mutate(
+#   #     Latitude_jitter = Latitude + runif(n(), min = -0.05, max = 0.05),
+#   #     Longitude_jitter = Longitude + runif(n(), min = -0.05, max = 0.05)
+#   #   )
+#   # 
+#   # Criar o mapa com os marcadores de bolhas e a legenda personalizada
+#   mapa_leaflet <- leaflet(data = dados_shapefile) %>%
+#     addProviderTiles("Esri.WorldTopoMap") %>%
+#     addPolygons(fillColor = "#392502", color = "#392502", stroke = TRUE, fillOpacity = 0.5) 
+#   # %>%
+#   #   addCircleMarkers(data = dados, lat = ~Latitude_jitter, lng = ~Longitude_jitter,
+#   #                    radius = ~sqrt(rendimento_medio) / 3,
+#   #                    color = ~cores[as.integer(dados$filtro)],
+#   #                    fillOpacity = 0.7,
+#   #                    label = ~paste("Rendimento:", round(rendimento_medio, 2),"kg/ha"))
+#                      #,
+#                      #labelOptions = labelOptions(noHide = F, direction = "top", textsize = "15px")) %>%
+#     # addLegendCustom(position = "bottomright",
+#     #                 sizes = sizes,
+#     #                 labels = labels) %>%
+#     # addLegend(position = "bottomright",
+#     #           colors = cor,
+#     #           labels = filtro)
+#   
+#   return(mapa_leaflet)
+# }
+
+
+# 7º FUNÇÃO - Comparação de médias de proutividade
+
+testeAnova <- function(dados, filtro){
+if(filtro == "cultivar"){
+  modelo_anova <- aov(rendimento_medio ~ localidade, data = dados)
+
+  } else {
+  modelo_anova <- aov(rendimento_medio ~ cultivar, data = dados)
+} 
+  return(modelo_anova)
+}
+# 
+#   
+#   modelo_anova <- aov(rendimento_medio ~ localidade, data = dados)
+#   
+# modelo_anova <- aov(rendimento_medio ~ cultivar*subregiao_abrev, data = selecionados)
+# modelo_anova <- aov(rendimento_medio ~ cultivar, data = selecionados)
+# summary(modelo_anova)
+# posthoc_tukey<- TukeyHSD(modelo_anova)
