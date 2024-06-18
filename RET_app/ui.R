@@ -1,9 +1,11 @@
 library(shiny)
+library(shinydashboard)
 library(plotly)
 library(gridlayout)
 library(bslib)
 library(leaflet)
 library(DT)
+library(bsicons)
 
 ui <- grid_page(
   layout = c(
@@ -52,8 +54,8 @@ ui <- grid_page(
           inputId = "selecao_localidade",
           label = "Selecione a localidade:",
           choices = dados$localidade
-        )
-        #uiOutput("localidade_ui")
+        ),
+        uiOutput("clima")
       ),
       conditionalPanel(
         condition = "input.filtro == 'cultivar'",
@@ -63,6 +65,15 @@ ui <- grid_page(
           choices = dados$cultivar
         #uiOutput("cultivar_ui")
       )
+    ),
+    checkboxInput(
+      inputId = "selecionar_ano",
+      label = "Selecionar ano: ",
+      value = FALSE
+    ),
+    conditionalPanel(
+      condition = "input.selecionar_ano == true",
+      uiOutput("ano_selecionado")
     )),
     card_footer(
       actionButton(inputId = "filtrar", label = "Filtrar"),
@@ -90,9 +101,7 @@ ui <- grid_page(
     area = "area7",
     card_body(
       plotlyOutput(
-        outputId = "distPlot",
-        width = "100%",
-        height = "100%"
+        outputId = "plot3"
       )
     )
   ),
@@ -107,18 +116,29 @@ ui <- grid_page(
     area = "area6",
     card_body(
       # value_box(
-      #   title = "Look at me!",
-      #   showcase = bsicons::bs_icon("database")
+      #   title = "Rendimento médio",
+      #   value = textOutput("vb1"),
+      #   icon = HTML('<img src="www/wheat-awn-solid.svg" height="50">')
       # )
+      value_box(
+        title = "Rendimento médio",
+        value = textOutput("vb1"),
+        showcase = bs_icon("graph-up"),
+        p("ton/ha"),
+        #showcase = HTML('<img src="www/wheat-awn-solid.svg" height="30" align="middle">'),
+        theme = value_box_theme(bg = "#00525b", fg = "#ffffff") 
+      )
     )
   ),
-  grid_card(
-    area = "area10",
-    card_body(
-      # value_box(
-      #   title = "Look at me!",
-      #   showcase = bsicons::bs_icon("database")
-      # )
+    grid_card(
+      area = "area10",
+      card_body(
+        plotlyOutput("plot4")
+        # value_box(
+        #   title = "Look at me!",
+        #   showcase = bsicons::bs_icon("database")
+        # )
+    
     )
   )
 )

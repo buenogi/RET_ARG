@@ -165,7 +165,7 @@ mapa <- function(shapefile, dados, filtro) {
     
   mapa_leaflet <- leaflet(data = shapefile) %>%
     addProviderTiles("Esri.WorldTopoMap") %>%
-    addPolygons(fillColor = "#392502", color = "#392502", stroke = TRUE, fillOpacity = 0.5)%>%
+    addPolygons(fillColor = "#392502", color = "#392502", stroke = TRUE, fillOpacity = 0.3)%>%
         addCircleMarkers(data = dados, lat = ~Latitude_jitter, lng = ~Longitude_jitter,
                          radius = ~sqrt(rendimento_medio) / 4,
                          color = "#00525b",
@@ -232,7 +232,97 @@ mapa <- function(shapefile, dados, filtro) {
 #   
 #   return(mapa_leaflet)
 # }
-
+# 6 º FUNÇÃO - Avaliação das variáveis climáticas
+dados_clima <- function(dados){
+  pluviosidade <- dados%>%
+    mutate_at(vars(starts_with("chuvas_")),as.numeric)%>%
+    select(chuvas_janeiro,chuvas_fevereiro,chuvas_marco,chuvas_abril,
+           chuvas_maio,chuvas_junho, chuvas_julho, chuvas_agosto, 
+           chuvas_setembro, chuvas_outubro, chuvas_novembro, chuvas_dezembro,
+           ano, localidade)%>%
+    group_by(ano,localidade)%>%
+    summarise(m_chuvas_janeiro = mean(chuvas_janeiro, na.rm = TRUE),
+              m_chuvas_fevereiro = mean(chuvas_fevereiro, na.rm = TRUE),
+              m_chuvas_marco = mean(chuvas_marco, na.rm = TRUE),
+              m_chuvas_abril = mean(chuvas_abril, na.rm = TRUE),
+              m_chuvas_maio = mean(chuvas_maio, na.rm = TRUE),
+              m_chuvas_junho = mean(chuvas_junho, na.rm = TRUE),
+              m_chuvas_julho = mean(chuvas_julho, na.rm = TRUE),
+              m_chuvas_agosto = mean(chuvas_agosto, na.rm = TRUE),
+              m_chuvas_setembro = mean(chuvas_setembro, na.rm = TRUE),
+              m_chuvas_outubro = mean(chuvas_outubro, na.rm = TRUE),
+              m_chuvas_novembro = mean(chuvas_novembro, na.rm = TRUE),
+              m_chuvas_dezembro = mean(chuvas_dezembro, na.rm = TRUE))
+  
+  pluviosidade <- pivot_longer(pluviosidade,
+                               cols = c(m_chuvas_janeiro,
+                                        m_chuvas_fevereiro,
+                                        m_chuvas_marco,
+                                        m_chuvas_abril,
+                                        m_chuvas_maio,
+                                        m_chuvas_junho,
+                                        m_chuvas_julho,
+                                        m_chuvas_agosto,
+                                        m_chuvas_setembro,
+                                        m_chuvas_outubro,
+                                        m_chuvas_novembro,
+                                        m_chuvas_dezembro),
+                               names_to = "mes",
+                               values_to = "pluviosidade")
+  pluviosidade$mes <- gsub("m_chuvas_", "", pluviosidade$mes)
+  
+  temperatura <- dados%>%
+    mutate_at(vars(starts_with("temp_")),as.numeric)%>%
+    select(temp_janeiro,temp_fevereiro,temp_marco,temp_abril,
+           temp_maio,temp_junho, temp_julho, temp_agosto, 
+           temp_setembro, temp_outubro, temp_novembro, temp_dezembro,
+           ano, localidade)%>%
+    group_by(ano,localidade)%>%
+    summarise(m_temp_janeiro = mean(temp_janeiro, na.rm = TRUE),
+              m_temp_fevereiro = mean(temp_fevereiro, na.rm = TRUE),
+              m_temp_marco = mean(temp_marco, na.rm = TRUE),
+              m_temp_abril = mean(temp_abril, na.rm = TRUE),
+              m_temp_maio = mean(temp_maio, na.rm = TRUE),
+              m_temp_junho = mean(temp_junho, na.rm = TRUE),
+              m_temp_julho = mean(temp_julho, na.rm = TRUE),
+              m_temp_agosto = mean(temp_agosto, na.rm = TRUE),
+              m_temp_setembro = mean(temp_setembro, na.rm = TRUE),
+              m_temp_outubro = mean(temp_outubro, na.rm = TRUE),
+              m_temp_novembro = mean(temp_novembro, na.rm = TRUE),
+              m_temp_dezembro = mean(temp_dezembro, na.rm = TRUE))
+  
+  temperatura <- pivot_longer(temperatura,
+                              cols = c(m_temp_janeiro,
+                                       m_temp_fevereiro,
+                                       m_temp_marco,
+                                       m_temp_abril,
+                                       m_temp_maio,
+                                       m_temp_junho,
+                                       m_temp_julho,
+                                       m_temp_agosto,
+                                       m_temp_setembro,
+                                       m_temp_outubro,
+                                       m_temp_novembro,
+                                       m_temp_dezembro),
+                              names_to = "mes",
+                              values_to = "temperatura")
+  temperatura$mes <- gsub("m_temp_", "", temperatura$mes)
+  
+  clima <- left_join(pluviosidade, temperatura, by = c("ano","mes","localidade"))
+  clima$mes <- str_to_upper(clima$mes)
+  clima$mes <- substr(clima$mes,1,3)
+  
+  meses_ord <- c("JAN", "FEV","MAR",
+                 "ABR","MAI","JUN",
+                 "JUL","AGO","SET",
+                 "OUT","NOV","DEZ")
+  clima$mes <- factor(clima$mes, levels = meses_ord)
+  clima <- clima %>%
+    mutate_all(~replace(., is.nan(.), NA))
+  
+  
+  return(clima)
+}
 
 # 7º FUNÇÃO - Comparação de médias de proutividade
 

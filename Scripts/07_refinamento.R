@@ -26,5 +26,5 @@ dados$empresa <- str_to_upper(dados$empresa)
 dados$empresa <- gsub("LCD", "LDC", dados$empresa)
 dados$empresa <- ifelse(is.na(dados$empresa), "Não informado", dados$empresa)
 dados$empresa <- ifelse(dados$empresa == "", "Não informado", dados$empresa)
-
+levels(as.factor(dados$empresa))
 write.csv(dados, file = "Dados/Dados_processados/RET_ARG_PT.csv")

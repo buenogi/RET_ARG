@@ -1,8 +1,10 @@
 library(leaflet)
 library(sf)
+library(shinydashboard)
 library(tidyverse)
 library(dplyr)
 library(plotly)
+library(bsicons)
 source("Global.R")
 
 dados <- read.csv("RET_ARG_PT.csv")
@@ -16,9 +18,28 @@ shapefile <- read_sf(dsn = caminho_arquivo)
 server <- function(input, output,session) {
   
   
-# Filtragem  -------------------------------------------------------------------
+  # Filtragem  -------------------------------------------------------------------
   
   observe(input$filtro)
+  
+  output$ano_selecionado <- renderUI({
+    radioButtons(
+      inputId = "ano",
+      label = "Ano:",
+      choices = list("2021" = "2021",
+                     "2022" = "2022",
+                     "2023" = "2023")
+    )
+  })
+  
+  output$clima <- renderUI({
+    radioButtons(
+      inputId = "informacoes_clima",
+      label = "Informações climáticas:",
+      choices = list("Pluviosidade" = "pluviosidade",
+                     "Temperatura" = "temperatura")
+    )
+  })
   
   dados_filtrados <- eventReactive(input$filtrar, {
     cat(file = stderr(), input$selecao, "\n")
@@ -30,25 +51,63 @@ server <- function(input, output,session) {
       dados_filtrados <- filtroSelecao(dados_completos, input$filtro, input$selecao_cultivar)
     }
     dados_filtrados <- CalcRendimento(dados_filtrados)
+    
+    # if(input$selecionar_ano == T){
+    #   dados_filtrados%>%
+    #     filter(ano == input$ano)
+    # } else{
+    #   dados_filtrados
+    # }
     return(dados_filtrados)
   })
-
+  # observe(input$selecionar_ano)
+  dados_filtrados_ano <- reactive(
+    dados_filtrados_ano <- dados_filtrados()%>%
+                filter(ano == input$ano))
+  # dados_filtrados_ano <- eventReactive(input$selecionar_ano,{
+  #   dados_filtrados_ano <- dados_filtrados()%>%
+  #     filter(ano == input$ano)
+  # })
+  
   #observe(input$selecao_empresa)
   #observe(input$selecao_localidade)
   #observe(input$selecao_cultivar)
   
-
   
-# Outputs -----------------
+  
+  # Outputs -----------------
   output$table <- renderDataTable({
-    dados_filtrados()
+    if(input$selecionar_ano == FALSE){
+      dados_filtrados <- dados_filtrados() %>%
+        select(ciclo, fungicida, cultivar, ano, grupo__qualidade, localidade,
+               subregiao_nome, solo, cultivo_antecesor, rendimento_medio)
+
+      colnames(dados_filtrados) <- c("Ciclo", "Fungicida", "Cultivar", "Ano", "Grupo", "Localidade", "Sub-região",
+                                     "Solo", "Cultivo anterior", "Rendimento (ton/ha)")
+      dados_filtrados
+    } else {
+    dados_filtrados_ano <- dados_filtrados_ano() %>%
+      select(ciclo, fungicida, cultivar,ano, grupo__qualidade, localidade,
+             subregiao_nome, solo, cultivo_antecesor, rendimento_medio)
+
+    colnames(dados_filtrados_ano) <- c("Ciclo", "Fungicida", "Cultivar","Ano", "Grupo", "Localidade", "Sub-região",
+                                       "Solo", "Cultivo anterior", "Rendimento (ton/ha)")
+    dados_filtrados_ano
+    }
   })
+  
+  
   
   output$plot1 <- renderPlotly({
     cat(file = stderr(), input$filtro, "\n")
-    
+    if(input$selecionar_ano){
+      dados_usados <- dados_filtrados_ano()
+    }
+    else{
+      dados_usados <- dados_filtrados()
+    }
     if(input$filtro == "cultivar"){
-      caterpilar_plot <- dados_filtrados() %>%
+      caterpilar_plot <- dados_usados %>%
         select(ano, fungicida, localidade, rendimento_medio, ciclo, grupo__qualidade) %>%
         group_by(localidade,grupo__qualidade) %>%
         summarise(
@@ -61,8 +120,9 @@ server <- function(input, output,session) {
         geom_point() +
         geom_errorbar(aes(ymin = mean_rendimento - sd_rendimento, ymax = mean_rendimento + sd_rendimento), width = 0.5) +
         coord_flip() +
+        scale_color_manual(values = c("#00525b", "#639876", "#392502", "#ead693"))+
         labs(x = "Localidade", y = "Rendimento médio (ton/ha)", color = "Grupo de qualidade") +
-        meutema()+
+        theme_minimal()+
         theme(legend.position = "bottom", legend.justification = c(0, 0))
       # } else  if(input$filtro == "localidade"){
       #     caterpilar_plot <- dados_filtrados() %>%
@@ -81,7 +141,7 @@ server <- function(input, output,session) {
       #       meutema()+
       #     theme(legend.position = "bottom", legend.justification = c(0, 0))
     }else{
-      caterpilar_plot <- dados_filtrados() %>%
+      caterpilar_plot <- dados_usados %>%
         select(ano, fungicida, cultivar, rendimento_medio, ciclo, grupo__qualidade) %>%
         group_by(cultivar,grupo__qualidade) %>%
         summarise(
@@ -94,8 +154,9 @@ server <- function(input, output,session) {
         geom_point() +
         geom_errorbar(aes(ymin = mean_rendimento - sd_rendimento, ymax = mean_rendimento + sd_rendimento), width = 0.5) +
         coord_flip() +
+        scale_color_manual(values = c("#00525b", "#368352", "#392502", "#ead693"))+
         labs(x = "Cultivar", y = "Rendimento médio (ton/ha)", color = "Grupo") +
-        meutema()+
+        theme_minimal()+
         theme(legend.position = "bottom", legend.justification = c(3, 0))
     }
     ggplotly(caterpilar_plot)
@@ -103,9 +164,124 @@ server <- function(input, output,session) {
   })
   
   output$plot2 <- renderLeaflet(
-    mapa(shapefile, dados_filtrados(), input$filtro)
+    if(input$selecionar_ano == F){
+      dados_agrupados <- dados_filtrados()%>%
+        group_by(localidade,input$filtro, Latitude, Longitude)%>%
+        summarise( rendimento_medio = mean(rendimento_medio))
+      
+      mapa(shapefile, dados_agrupados, input$filtro)
+    }
+    else{
+      dados_agrupados <- dados_filtrados_ano()%>%
+        group_by(localidade,input$filtro, Latitude, Longitude, input$ano)%>%
+        summarise( rendimento_medio = mean(rendimento_medio))
+      
+      mapa(shapefile, dados_agrupados, input$filtro)
+    }
+    
   )
+  
+  dados_usados2 <- reactive(
+    if(input$selecionar_ano) {
+      dados_usados <- dados_filtrados_ano()
+    } else {
+      dados_usados <- dados_filtrados()
+    }
+  )
+  
+  output$plot3 <- renderPlotly(
+
+    if(input$filtro == "empresa"|input$filtro == "cultivar"|input$filtro == "localidade") {
+      valor_limite_sup <- 250
+      valor_limite_inf <- 25
+      plot3 <- dados_usados2()%>%
+        mutate(
+          dias_do_plantio_a_maturacao = ifelse(dias_do_plantio_a_maturacao > valor_limite_sup, valor_limite_sup, dias_do_plantio_a_maturacao),
+          dias_do_plantio_a_maturacao = ifelse(dias_do_plantio_a_maturacao < valor_limite_inf, valor_limite_inf, dias_do_plantio_a_maturacao)
+        ) %>%
+        ggplot() +
+        aes(x = as.factor(ano), y = dias_do_plantio_a_maturacao) +
+        geom_boxplot(fill = "#00525b") +
+        geom_point(data = . %>% filter(dias_do_plantio_a_maturacao == valor_limite_sup|
+                                         dias_do_plantio_a_maturacao == valor_limite_inf ),
+                   aes(x = as.factor(ano), y = dias_do_plantio_a_maturacao),
+                   color = "red", shape = 8, size = 3) +
+        facet_grid(~grupo__qualidade) +
+        labs(x = "Ano", y = "Dias do Plantio à Maturação") +
+        theme_minimal() +
+        theme(legend.position = "bottom", legend.justification = c(0, 0))
+      
+      ggplotly(plot3)
+    }
+  )
+  
+  # Caixas de valores
+  # media_vb1 <- reactive(
+  #   dados_usados2()%>%
+  #     group_by(empresa)%>%
+  #     summarise(media = mean(rendimento_medio))
+  
+  output$vb1 <- renderText({
+    if(!is.null(input$filtro)){
+      mediavb1 <- dados_usados2()%>%
+        group_by(input$filtro)%>%
+        summarise(media = mean(rendimento_medio))
+      paste0(round(mediavb1[1,2], 2))
+    }
+  })
+  
+    clima <- reactive(
+    dados_clima(dados_usados2())
+  )
+  
+    output$plot4 <- renderPlotly({
+      if(input$filtro == "localidade"){
+        if(input$informacoes_clima == "pluviosidade"){
+          if(input$selecionar_ano){
+          pluviosidade <- ggplot(clima()) +
+            aes(x = mes, y = pluviosidade, group = localidade, color = localidade) +
+            geom_line() +
+            labs(x = "Mês", y = "Pluviosidade (mm)", color = "Localidade")+
+            theme_minimal()}
+          else{
+            pluviosidade <- clima()%>%
+              group_by(ano, mes, localidade) %>%
+              summarise(pl_media = mean(pluviosidade, na.rm = TRUE)) %>%
+              ggplot() +
+              aes(x = mes, y = pl_media, group = interaction(localidade, ano), 
+                  color = localidade, linetype = factor(ano)) +
+              geom_line() +
+              labs(x = "Mês", y = "Pluviosidade (mm)", color = "Localidade/ano")+
+              theme_minimal()}
+          ggplotly(pluviosidade)}else{
+            if(input$selecionar_ano){
+              temperatura <- ggplot(clima()) +
+                aes(x = mes, y = temperatura, group = localidade, color = localidade) +
+                geom_line() +
+                labs(x = "Mês", y = "Temperatura (ºC)", color = "Localidade")+
+                theme_minimal()}
+            else{
+              temperatura <- clima()%>%
+                group_by(ano, mes, localidade) %>%
+                summarise(pl_media = mean(temperatura, na.rm = TRUE)) %>%
+                ggplot() +
+                aes(x = mes, y = pl_media, group = interaction(localidade, ano), 
+                    color = localidade, linetype = factor(ano)) +
+                geom_line() +
+                labs(x = "Mês", y = "Temperatura (ºC)", color = "Localidade/ano")+
+                theme_minimal()}
+            ggplotly(temperatura)
+          }
+        
+      }
+      
+        })
+    output$vb2 <- renderText({
+        # conta o número de experimentos realizados
+        mediavb1 <- dados_usados2()%>% 
+          group_by(empresa)%>%
+          summarise(media = mean(rendimento_medio))
+        paste0(round(mediavb1[1,2], 2))
+    })
+    
 }
-
-
-
