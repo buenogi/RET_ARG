@@ -8,26 +8,34 @@ library(DT)
 library(bsicons)
 
 ui <- grid_page(
+  theme = bs_theme(bootswatch = 'lux'),
+  tags$head(
+    tags$style(HTML(
+      ".card{
+        border:none;
+      }"
+      ))
+  ),
   layout = c(
     "header  header   header header header",
     "sidebar bluePlot area8  area8  area6 ",
     "sidebar bluePlot area8  area8  area10",
-    "table table    table  area7  area7 ",
-    "table   table    table  area7  area7 "
+    "table table    area7  area7  area1 ",
+    "table   table    area7  area7  area1"
   ),
   row_sizes = c(
     "45px",
+    "0.75fr",
+    "1.5fr",
     "1fr",
-    "1fr",
-    "1.29fr",
-    "0.71fr"
+    "0.75fr"
   ),
   col_sizes = c(
     "0.5fr",
-    "1.5fr",
-    "0.75fr",
-    "0.75fr",
-    "1fr"
+    "1.2fr",
+    "0.8fr",
+    "0.6fr",
+    "1.4fr"
   ),
   gap_size = "1rem",
   grid_card(
@@ -63,18 +71,18 @@ ui <- grid_page(
           inputId = "selecao_cultivar",
           label = "Selecione a cultivar:",
           choices = dados$cultivar
-        #uiOutput("cultivar_ui")
-      )
-    ),
-    checkboxInput(
-      inputId = "selecionar_ano",
-      label = "Selecionar ano: ",
-      value = FALSE
-    ),
-    conditionalPanel(
-      condition = "input.selecionar_ano == true",
-      uiOutput("ano_selecionado")
-    )),
+          #uiOutput("cultivar_ui")
+        )
+      ),
+      checkboxInput(
+        inputId = "selecionar_ano",
+        label = "Selecionar ano: ",
+        value = FALSE
+      ),
+      conditionalPanel(
+        condition = "input.selecionar_ano == true",
+        uiOutput("ano_selecionado")
+      )),
     card_footer(
       actionButton(inputId = "filtrar", label = "Filtrar"),
       align = "center"
@@ -88,17 +96,19 @@ ui <- grid_page(
   ),
   grid_card(
     area = "table",
-    card_header("Table"),
+    card_header("Informações dos experimentos"),
     card_body(DTOutput(outputId = "table", width = "100%"))
   ),
   grid_card(
     area = "bluePlot",
+    card_header("Regiões trigueiras da Argentina"),
     card_body(
       leafletOutput(outputId = "plot2"))
     
   ),
   grid_card(
     area = "area7",
+    card_header("Variação do tempo do plantio a maturação"),
     card_body(
       plotlyOutput(
         outputId = "plot3"
@@ -107,6 +117,7 @@ ui <- grid_page(
   ),
   grid_card(
     area = "area8",
+    card_header("Produtividade"),
     card_body(
       #plotOutput("plot1")
       plotlyOutput("plot1")
@@ -130,15 +141,43 @@ ui <- grid_page(
       )
     )
   ),
-    grid_card(
+  grid_card(
+    area = "area10",
+    card_body(
+      conditionalPanel(
+        condition = "input.filtro == 'localidade'",  
+      plotlyOutput("plot4")
+      # value_box(
+      #   title = "Look at me!",
+      #   showcase = bsicons::bs_icon("database")
+      # )
+    ),
+    conditionalPanel(
+      condition = "input$filtro != 'localidade'",
       area = "area10",
       card_body(
-        plotlyOutput("plot4")
-        # value_box(
-        #   title = "Look at me!",
-        #   showcase = bsicons::bs_icon("database")
-        # )
-    
+        uiOutput("vb2")
+      )
     )
+    )
+  ),
+  grid_card(
+     area = "area1",
+  #   card_header("ANOVA"),
+  #   card_body(
+  #   verbatimTextOutput("texto")
+  #   )
+  # ),
+  # grid_card(
+  #   area = "area2",
+  #   card_header("Post-hoc"),
+  #   card_body(
+  #     DTOutput(outputId = "texto2", width = "100%")
+  #   )
+  # )
+  navset_card_underline(
+    nav_panel("ANOVA",verbatimTextOutput("texto")),
+    nav_panel("Post-hoc", DTOutput(outputId = "texto2", width = "80%"))
+  )
   )
 )

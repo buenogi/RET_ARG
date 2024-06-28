@@ -1,0 +1,13 @@
+name: RedeExpTrigo_ARG
+title: RedeExpTrigo_ARG
+username: luvgwl-gislayne-bueno
+account: luvgwl-gislayne-bueno
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 12246056
+bundleId: 8797909
+url: https://luvgwl-gislayne-bueno.shinyapps.io/RedeExpTrigo_ARG/
+version: 1
+asMultiple: FALSE
+asStatic: FALSE
+ignoredFiles: www/wheat-awn-solid.svg

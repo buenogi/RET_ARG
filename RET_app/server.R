@@ -7,7 +7,8 @@ library(plotly)
 library(bsicons)
 source("Global.R")
 
-dados <- read.csv("RET_ARG_PT.csv")
+#dados <- read.csv("../RET_app/RET_ARG_PT.csv")
+
 
 # Extração de coordenadas  -----------------------------------------------------
 
@@ -78,21 +79,51 @@ server <- function(input, output,session) {
   # Outputs -----------------
   output$table <- renderDataTable({
     if(input$selecionar_ano == FALSE){
-      dados_filtrados <- dados_filtrados() %>%
-        select(ciclo, fungicida, cultivar, ano, grupo__qualidade, localidade,
-               subregiao_nome, solo, cultivo_antecesor, rendimento_medio)
-
-      colnames(dados_filtrados) <- c("Ciclo", "Fungicida", "Cultivar", "Ano", "Grupo", "Localidade", "Sub-região",
-                                     "Solo", "Cultivo anterior", "Rendimento (ton/ha)")
+      if(input$filtro =="empresa"| input$filtro == "localidade"){
+        dados_filtrados <- dados_filtrados() %>%
+            select(ciclo, fungicida, cultivar, ano, grupo__qualidade, localidade,
+                   subregiao_nome, solo, cultivo_antecesor, rendimento_medio)%>%
+          group_by(cultivar, ciclo)%>%
+          summarise("produtividade_media" =  round(mean(rendimento_medio),2),
+                    "sd_produtividade" =  round(sd(rendimento_medio),2))
+        colnames(dados_filtrados) <- c("Cultivar",  "Ciclo", "Produtividade média (ton/ha)", 
+                                       "Desvio padrão")
+          
+      } else{
+        dados_filtrados <- dados_filtrados() %>%
+          select(ciclo, fungicida, cultivar, ano, grupo__qualidade, localidade,
+                 subregiao_nome, solo, cultivo_antecesor, rendimento_medio)%>%
+          group_by(localidade, ciclo)%>%
+          summarise("produtividade_media" =  round(mean(rendimento_medio),2),
+                    "sd_produtividade" =  round(sd(rendimento_medio),2))
+        colnames(dados_filtrados) <- c("Localidade",  "Ciclo", "Produtividade média (ton/ha)", 
+                                       "Desvio padrão")
+      }
       dados_filtrados
     } else {
-    dados_filtrados_ano <- dados_filtrados_ano() %>%
-      select(ciclo, fungicida, cultivar,ano, grupo__qualidade, localidade,
-             subregiao_nome, solo, cultivo_antecesor, rendimento_medio)
-
-    colnames(dados_filtrados_ano) <- c("Ciclo", "Fungicida", "Cultivar","Ano", "Grupo", "Localidade", "Sub-região",
-                                       "Solo", "Cultivo anterior", "Rendimento (ton/ha)")
-    dados_filtrados_ano
+   
+    if(input$filtro =="empresa"| input$filtro == "localidade"){
+      dados_filtrados_ano <- dados_filtrados_ano() %>%
+        select(ciclo, fungicida, cultivar,ano, grupo__qualidade, localidade,
+               subregiao_nome, solo, cultivo_antecesor, rendimento_medio)%>%
+        group_by(cultivar,grupo__qualidade, ciclo)%>%
+        summarise("produtividade_media" =  round(mean(rendimento_medio),2),
+                  "sd_produtividade" =  round(sd(rendimento_medio),2))
+      colnames(dados_filtrados_ano) <- c("Cultivar", "Grupo de qualidade", "Ciclo", "Produtividade média (ton/ha)", 
+                                     "Desvio padrão")
+      dados_filtrados_ano
+      
+    } else{
+      dados_filtrados_ano <- dados_filtrados_ano() %>%
+        select(ciclo, fungicida, cultivar,ano, grupo__qualidade, localidade,
+               subregiao_nome, solo, cultivo_antecesor, rendimento_medio)%>%
+        group_by(localidade,grupo__qualidade, ciclo)%>%
+        summarise("produtividade_media" =  round(mean(rendimento_medio),2),
+                  "sd_produtividade" =  round(sd(rendimento_medio),2))
+      colnames(dados_filtrados_ano) <- c("Localidade", "Grupo de qualidade", "Ciclo", "Produtividade média (ton/ha)", 
+                                     "Desvio padrão")
+      dados_filtrados_ano
+    }
     }
   })
   
@@ -274,14 +305,70 @@ server <- function(input, output,session) {
           }
         
       }
-      
         })
-    output$vb2 <- renderText({
-        # conta o número de experimentos realizados
-        mediavb1 <- dados_usados2()%>% 
-          group_by(empresa)%>%
-          summarise(media = mean(rendimento_medio))
-        paste0(round(mediavb1[1,2], 2))
+    
+    indicador_vb2 <- reactive({
+      dados_usados2()%>%
+      count()})
+
+    output$vb2 <- renderUI({
+      value_box(
+        title = "Nº de experimentos realizados",
+        value = paste0(indicador_vb2()),
+        showcase = bsicons::bs_icon("file-ruled"),
+        theme = value_box_theme(bg = "#392502", fg = "#ead693")
+      )
+    })
+      
+    output$texto <- renderPrint({
+     
+      if(input$filtro == "localidade") {
+        modelo_anova <- aov(rendimento_medio ~ cultivar, data = dados_usados2())
+      } else if(input$filtro == "cultivar"){
+        modelo_anova <- aov(rendimento_medio ~ localidade, data = dados_usados2())
+      }else{
+        modelo_anova <- aov(rendimento_medio ~ cultivar * localidade, data = dados_usados2())
+      }
+      
+      print(summary(modelo_anova))
     })
     
+    output$texto2 <-  renderDataTable({
+      if(input$filtro == "localidade") {
+        modelo_anova <- aov(rendimento_medio ~ cultivar, data = dados_usados2())
+        comparacao <- emmeans(modelo_anova, specs = ~cultivar) |>
+          multcomp::cld(Letters = letters, adjust = "fdr") |>
+          dplyr::mutate(.group = trimws(.group)) |>
+          as.data.frame()
+        comparacao%>%
+          select(cultivar, emmean,SE,.group)%>%
+          mutate(emmean = round(emmean,2),
+                 SE = round(SE,2))
+      } else if(input$filtro == "cultivar"){
+        modelo_anova <- aov(rendimento_medio ~ localidade, data = dados_usados2())
+        comparacao <-emmeans(modelo_anova, specs = ~localidade) |>
+          multcomp::cld(Letters = letters, adjust = "fdr") |>
+          dplyr::mutate(.group = trimws(.group)) |>
+          as.data.frame()
+        comparacao%>%
+          select(cultivar, emmean,SE,.group)%>%
+          mutate(emmean = round(emmean,2),
+                 SE = round(SE,2))
+      }else{
+        modelo_anova <- aov(rendimento_medio ~ cultivar * localidade, data = dados_usados2())
+        comparacao <- emmeans(modelo_anova, specs = ~cultivar|localidade) |>
+          multcomp::cld(Letters = letters, adjust = "fdr") |>
+          dplyr::mutate(.group = trimws(.group)) |>
+          as.data.frame()
+        comparacao%>%
+          select(cultivar,localidade,emmean,SE,.group)%>%
+          mutate(emmean = round(emmean,2),
+                 SE = round(SE,2))
+              }
+      #posthoc_tukey <- TukeyHSD(modelo_anova)
+      #emmeans::emmeans(modelo_anova)
+    })
+    
+     
+  
 }

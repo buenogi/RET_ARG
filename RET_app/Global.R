@@ -11,6 +11,8 @@ library(dplyr)
 
 # 1ª FUNÇÃO - Tema para os gráficos --------------------------------------------------------
 
+dados <- read.csv("RET_ARG_PT.csv")
+
 require(extrafont)
 
 COR.1="#ead693"
