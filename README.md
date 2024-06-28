@@ -6,8 +6,4 @@ São informações de experimentos de competição de rendimento cultivares de t
     
     
 Público alvo:  agricultores, comerciantes, consultores ou qualquer outro que desempenhe um papel na cadeia de trigo.    
-KPIs:
-
-Quais cultivares apresentam o maior rendimento?    
-Quais variantes serão excluídas no próximo ciclo?
 
